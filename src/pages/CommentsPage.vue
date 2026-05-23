@@ -36,11 +36,13 @@ function submitComment() {
               <span class="h-11 w-11 rounded-full bg-[#6a4329]" />
               <p class="truncate text-3xl text-paper-900">{{ comment.content }}</p>
             </div>
-            <span class="ml-3 text-3xl text-[#7f4327]">▫ {{ comment.liked }}</span>
+            <span class="ml-3 text-3xl text-[#7f4327]">♡ {{ comment.liked }}</span>
           </div>
         </div>
 
-        <div class="mt-6 flex items-center rounded-full border border-paper-600/60 bg-paper-100 px-4 py-2">
+        <div
+          class="mt-6 flex items-center rounded-full border border-paper-600/60 bg-paper-100 px-4 py-2"
+        >
           <input
             v-model="draft"
             class="w-full bg-transparent text-3xl text-paper-900 outline-none placeholder:text-paper-600"
@@ -52,7 +54,7 @@ function submitComment() {
             class="grid h-14 w-14 place-content-center rounded-full bg-paper-900 text-2xl text-paper-50"
             @click="submitComment"
           >
-            ▫
+            ➤
           </button>
         </div>
       </article>
@@ -87,28 +89,6 @@ function submitComment() {
             <span class="text-4xl text-paper-700">›</span>
           </li>
         </ul>
-
-        <div class="mt-5 rounded-[1.4rem] bg-[#251610] px-4 py-3 text-paper-50">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex min-w-0 items-center gap-3">
-              <div class="grid h-12 w-12 place-content-center rounded-xl bg-paper-800 text-lg">📻</div>
-              <div class="min-w-0">
-                <p class="truncate font-retro text-4xl">{{ currentProgram.title }}</p>
-                <p class="text-2xl text-paper-300">主播: {{ currentProgram.host }}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="grid h-14 w-14 place-content-center rounded-full border-2 border-amber-500 text-4xl text-amber-300"
-              @click="radioStore.togglePlay(currentProgram.id)"
-            >
-              {{ isPlaying ? 'Ⅱ' : '▶' }}
-            </button>
-          </div>
-          <div class="mt-2 max-w-xs">
-            <Waveform :animated="isPlaying" />
-          </div>
-        </div>
       </aside>
     </section>
   </main>
