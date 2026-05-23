@@ -10,12 +10,16 @@ const emit = defineEmits(['toggle'])
 </script>
 
 <template>
-  <section class="rounded-[1.75rem] border border-[#7a502f]/70 bg-[#22150f] px-6 py-5 text-paper-50 shadow-soft">
+  <section
+    class="rounded-[1.75rem] border border-[#7a502f]/70 bg-[#22150f] px-6 py-5 text-paper-50 shadow-soft"
+  >
     <p class="text-[13px] tracking-[0.28em] text-paper-300">NOW PLAYING</p>
     <div class="mt-3 flex items-center justify-between gap-4">
       <div class="min-w-0">
         <h3 class="truncate font-retro text-4xl text-paper-50">{{ props.program.title }}</h3>
-        <p class="mt-1 text-2xl text-paper-300">{{ props.program.host }} · {{ props.program.duration }}</p>
+        <p class="mt-1 text-2xl text-paper-300">
+          {{ props.program.host }} · {{ props.program.duration }}
+        </p>
       </div>
       <button
         type="button"
