@@ -85,20 +85,31 @@ const episodeList = computed(() => program.value?.episodes || [])
             <h3 class="font-retro text-6xl text-paper-900">节目列表</h3>
             <ul class="mt-4 space-y-4">
               <li
-                v-for="episode in episodeList"
+                v-for="(episode, index) in episodeList"
                 :key="episode.id"
-                class="flex items-center justify-between text-paper-900"
+                class="flex items-center justify-between rounded-xl px-3 py-2 text-paper-900"
+                :class="
+                  index === radioStore.currentEpisodeIndex
+                    ? 'border border-paper-700/40 bg-paper-100/85'
+                    : ''
+                "
               >
                 <div class="flex min-w-0 items-center gap-3">
                   <span
                     class="h-3 w-3 rounded-full"
-                    :class="episode.duration === '直播中' ? 'bg-[#a43b2a]' : 'bg-[#beaa84]'"
+                    :class="
+                      episode.duration === '直播中'
+                        ? 'bg-[#a43b2a]'
+                        : index === radioStore.currentEpisodeIndex
+                          ? 'bg-[#7f2e20]'
+                          : 'bg-[#beaa84]'
+                    "
                   />
                   <span class="text-3xl text-paper-700">{{ episode.date }}</span>
                   <button
                     type="button"
                     class="truncate text-left text-4xl font-semibold hover:underline"
-                    @click="radioStore.playProgram(program.id)"
+                    @click="radioStore.playProgram(program.id); radioStore.currentEpisodeIndex = index"
                   >
                     {{ episode.title }}
                   </button>

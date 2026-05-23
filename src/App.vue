@@ -1,10 +1,17 @@
 <script setup>
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import TopNav from './components/TopNav.vue'
+import GlobalPlayerBar from './components/GlobalPlayerBar.vue'
+import ToastStack from './components/ToastStack.vue'
+import { useRadioStore } from './stores/radio'
 
 const route = useRoute()
 const router = useRouter()
+const radioStore = useRadioStore()
+const { currentProgram, isPlaying, progress, durationLabel, progressLabel, nextEpisodeTitle, toasts } =
+  storeToRefs(radioStore)
 
 const navItems = [
   { key: 'home', label: '首页', path: '/' },
@@ -32,10 +39,25 @@ function handleNavigate(key) {
 </script>
 
 <template>
-  <div class="pb-10 font-sans text-paper-900">
+  <div class="pb-32 font-sans text-paper-900">
     <TopNav :items="navItems" :active="activeNav" @navigate="handleNavigate" />
     <div class="retro-shell">
       <RouterView />
     </div>
+    <GlobalPlayerBar
+      v-if="currentProgram"
+      :program="currentProgram"
+      :is-playing="isPlaying"
+      :progress="progress"
+      :duration-sec="radioStore.currentEpisode ? Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1]) : Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])"
+      :progress-label="progressLabel"
+      :duration-label="durationLabel"
+      :next-title="nextEpisodeTitle"
+      @toggle="radioStore.togglePlay(currentProgram.id)"
+      @seek="radioStore.setProgress"
+      @next="radioStore.playNext"
+      @prev="radioStore.playPrevious"
+    />
+    <ToastStack :toasts="toasts" />
   </div>
 </template>
