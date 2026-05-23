@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #2c1b10;
+  background: #efe1c8;
+}
+
+body {
+  min-height: 100vh;
+  color: #2c1b10;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(252, 226, 176, 0.32), transparent 40%),
+    radial-gradient(circle at 80% 78%, rgba(166, 119, 74, 0.2), transparent 50%),
+    repeating-linear-gradient(
+      180deg,
+      rgba(120, 85, 48, 0.08),
+      rgba(120, 85, 48, 0.08) 1px,
+      transparent 1px,
+      transparent 6px
+    ),
+    #efe1c8;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(63, 44, 23, 0.07) 0.4px, transparent 0.4px);
+  background-size: 4px 4px;
+  opacity: 0.35;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+@layer components {
+  .retro-shell {
+    width: min(1240px, calc(100% - 56px));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .retro-card {
+    border: 1px solid rgba(110, 74, 43, 0.45);
+    background: rgba(230, 207, 165, 0.86);
+    box-shadow: 0 10px 24px rgba(64, 44, 27, 0.12);
+  }
+}
