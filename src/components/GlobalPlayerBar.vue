@@ -40,7 +40,9 @@ function formatListeners(value) {
           >
             {{ props.isPlaying ? 'ON AIR' : 'PAUSED' }}
           </span>
-          <span class="text-xs text-paper-700">{{ props.progressLabel }} / {{ props.durationLabel }}</span>
+          <span class="text-xs text-paper-700"
+            >{{ props.progressLabel }} / {{ props.durationLabel }}</span
+          >
         </div>
         <p class="mt-1 truncate font-retro text-3xl text-paper-900">
           {{ props.program.category }} · {{ props.program.title }}

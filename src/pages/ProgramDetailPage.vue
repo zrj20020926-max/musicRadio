@@ -109,7 +109,10 @@ const episodeList = computed(() => program.value?.episodes || [])
                   <button
                     type="button"
                     class="truncate text-left text-4xl font-semibold hover:underline"
-                    @click="radioStore.playProgram(program.id); radioStore.currentEpisodeIndex = index"
+                    @click="
+                      radioStore.playProgram(program.id)
+                      radioStore.currentEpisodeIndex = index
+                    "
                   >
                     {{ episode.title }}
                   </button>

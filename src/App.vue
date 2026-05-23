@@ -10,8 +10,15 @@ import { useRadioStore } from './stores/radio'
 const route = useRoute()
 const router = useRouter()
 const radioStore = useRadioStore()
-const { currentProgram, isPlaying, progress, durationLabel, progressLabel, nextEpisodeTitle, toasts } =
-  storeToRefs(radioStore)
+const {
+  currentProgram,
+  isPlaying,
+  progress,
+  durationLabel,
+  progressLabel,
+  nextEpisodeTitle,
+  toasts,
+} = storeToRefs(radioStore)
 
 const navItems = [
   { key: 'home', label: '首页', path: '/' },
@@ -49,7 +56,11 @@ function handleNavigate(key) {
       :program="currentProgram"
       :is-playing="isPlaying"
       :progress="progress"
-      :duration-sec="radioStore.currentEpisode ? Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1]) : Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])"
+      :duration-sec="
+        radioStore.currentEpisode
+          ? Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])
+          : Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])
+      "
       :progress-label="progressLabel"
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
