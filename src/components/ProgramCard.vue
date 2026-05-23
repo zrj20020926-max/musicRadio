@@ -5,7 +5,7 @@ const props = defineProps({
   isFavorite: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['play', 'subscribe', 'favorite'])
+const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
 </script>
 
 <template>
@@ -19,7 +19,13 @@ const emit = defineEmits(['play', 'subscribe', 'favorite'])
       </div>
       <div class="min-w-0 flex-1">
         <div class="inline-flex rounded-lg bg-[#a43b2a] px-2 py-1 text-[11px] font-semibold tracking-[0.15em] text-paper-50">ON AIR</div>
-        <h3 class="mt-2 line-clamp-2 font-retro text-3xl leading-tight text-paper-900">{{ props.program.title }}</h3>
+        <button
+          type="button"
+          class="mt-2 line-clamp-2 text-left font-retro text-3xl leading-tight text-paper-900 hover:underline"
+          @click="emit('detail', props.program.id)"
+        >
+          {{ props.program.title }}
+        </button>
         <p class="mt-1 text-xl text-paper-700">{{ props.program.host }}</p>
         <p class="text-lg text-paper-600">更新于今日 · {{ props.program.listeners }} 次收听</p>
       </div>

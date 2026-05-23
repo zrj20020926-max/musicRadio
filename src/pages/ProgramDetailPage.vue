@@ -3,29 +3,31 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import Waveform from '../components/Waveform.vue'
-import { topPrograms } from '../data/mockData'
 import { useRadioStore } from '../stores/radio'
 
 const route = useRoute()
 const radioStore = useRadioStore()
 const { subscribed, isPlaying } = storeToRefs(radioStore)
 
-const program = computed(() => topPrograms.find((item) => item.id === route.params.id) ?? topPrograms[0])
-
-const episodeList = [
-  { date: '2024-05-19', title: '你并不孤单', duration: '直播中', active: true },
-  { date: '2024-05-18', title: '慢慢地睡去', duration: '42:36', active: false },
-  { date: '2024-05-17', title: '那些说不出口的话', duration: '43:28', active: false },
-]
+const program = computed(() => radioStore.getProgramById(route.params.id))
+const hasProgram = computed(() => Boolean(program.value))
+const episodeList = computed(() => program.value?.episodes || [])
 </script>
 
 <template>
   <main class="mt-8 w-full">
-    <section class="rounded-[2rem] border border-paper-600/60 bg-paper-200/90 p-8 shadow-soft">
+    <section
+      v-if="hasProgram"
+      class="rounded-[2rem] border border-paper-600/60 bg-paper-200/90 p-8 shadow-soft"
+    >
       <div class="grid grid-cols-[0.95fr_1.55fr] gap-8">
         <div>
-          <article class="rounded-[2rem] bg-gradient-to-br from-[#2b1a14] to-[#4a2d1f] p-6 text-paper-100">
-            <div class="inline-flex rounded-2xl bg-[#b54530] px-5 py-2 text-4xl font-bold">ON AIR</div>
+          <article
+            :class="`rounded-[2rem] bg-gradient-to-br ${program.cover.tone} p-6 text-paper-100`"
+          >
+            <div class="inline-flex rounded-2xl bg-[#b54530] px-5 py-2 text-4xl font-bold">
+              ON AIR
+            </div>
             <div class="mt-8 rounded-[1.5rem] border-2 border-amber-500/70 p-4">
               <div class="rounded-xl border border-amber-500/70 p-3">
                 <div class="h-14 rounded-xl border border-amber-500/50 p-2">
@@ -60,7 +62,9 @@ const episodeList = [
 
         <div>
           <h2 class="font-retro text-7xl text-paper-900">{{ program.title }}</h2>
-          <p class="mt-2 text-4xl text-paper-700">主播: {{ program.host }} · 深夜 · 陪伴 · 治愈</p>
+          <p class="mt-2 text-4xl text-paper-700">
+            主播: {{ program.host }} · {{ program.category }} · 陪伴 · 治愈
+          </p>
 
           <button
             type="button"
@@ -73,7 +77,7 @@ const episodeList = [
           <div class="mt-8">
             <h3 class="font-retro text-6xl text-paper-900">节目简介</h3>
             <p class="mt-3 max-w-4xl text-3xl leading-relaxed text-paper-800">
-              每个夜晚，我都会在这里，陪你聊聊天，听首歌，读一封信，或只是静静地陪着你。这里没有催促，只有慢慢亮起的声音。
+              {{ program.description }}
             </p>
           </div>
 
@@ -82,11 +86,14 @@ const episodeList = [
             <ul class="mt-4 space-y-4">
               <li
                 v-for="episode in episodeList"
-                :key="episode.date + episode.title"
+                :key="episode.id"
                 class="flex items-center justify-between text-paper-900"
               >
                 <div class="flex min-w-0 items-center gap-3">
-                  <span class="h-3 w-3 rounded-full" :class="episode.active ? 'bg-[#a43b2a]' : 'bg-[#beaa84]'" />
+                  <span
+                    class="h-3 w-3 rounded-full"
+                    :class="episode.duration === '直播中' ? 'bg-[#a43b2a]' : 'bg-[#beaa84]'"
+                  />
                   <span class="text-3xl text-paper-700">{{ episode.date }}</span>
                   <button
                     type="button"
@@ -96,7 +103,11 @@ const episodeList = [
                     {{ episode.title }}
                   </button>
                 </div>
-                <span class="text-3xl" :class="episode.active ? 'text-[#a43b2a]' : 'text-paper-700'">{{ episode.duration }}</span>
+                <span
+                  class="text-3xl"
+                  :class="episode.duration === '直播中' ? 'text-[#a43b2a]' : 'text-paper-700'"
+                  >{{ episode.duration }}</span
+                >
               </li>
             </ul>
 
@@ -104,6 +115,11 @@ const episodeList = [
           </div>
         </div>
       </div>
+    </section>
+
+    <section v-else class="retro-card rounded-[2rem] p-10 text-center">
+      <h2 class="font-retro text-6xl text-paper-900">节目不存在</h2>
+      <p class="mt-3 text-2xl text-paper-700">这段声音也许已经下线，请返回节目列表继续收听。</p>
     </section>
   </main>
 </template>

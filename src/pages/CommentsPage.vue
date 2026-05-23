@@ -41,7 +41,7 @@ function submitComment() {
         </div>
 
         <div
-          class="mt-6 flex items-center rounded-full border border-paper-600/60 bg-paper-100 px-4 py-2"
+          class="mt-6 flex items-center rounded-full border border-paper-600/60 bg-paper-100 px-4 py-2 transition focus-within:border-paper-800 focus-within:shadow-sm"
         >
           <input
             v-model="draft"

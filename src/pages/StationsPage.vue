@@ -1,10 +1,9 @@
 <script setup>
-const scheduleItems = [
-  { time: '07:00', title: '早安电台', host: '小七', live: false },
-  { time: '12:00', title: '午后时光', host: '林深', live: false },
-  { time: '21:00', title: '深夜电台', host: '阿北', live: true },
-  { time: '23:00', title: '故事时间', host: '阿北', live: false },
-]
+import { storeToRefs } from 'pinia'
+import { useRadioStore } from '../stores/radio'
+
+const radioStore = useRadioStore()
+const { currentProgram, todaySchedulePrograms } = storeToRefs(radioStore)
 </script>
 
 <template>
@@ -14,24 +13,25 @@ const scheduleItems = [
         <h2 class="font-retro text-6xl text-paper-50">今日节目单</h2>
 
         <div class="relative mt-6 rounded-[1.8rem] border border-paper-700/40 bg-paper-200 p-6">
-          <div
-            v-for="item in scheduleItems"
+          <button
+            v-for="item in todaySchedulePrograms"
             :key="item.time"
-            class="border-b border-paper-600/40 py-4 last:border-b-0"
+            type="button"
+            class="grid w-full grid-cols-[96px_1fr_auto] items-center gap-4 border-b border-paper-600/40 py-4 text-left last:border-b-0"
+            :class="item.program.id === currentProgram.id ? 'rounded-xl bg-paper-100/90 px-2' : ''"
+            @click="radioStore.playProgram(item.program.id)"
           >
-            <div class="grid grid-cols-[96px_1fr_auto] items-center gap-4">
-              <span class="text-4xl text-paper-700">{{ item.time }}</span>
-              <div>
-                <p class="font-retro text-5xl text-paper-900">{{ item.title }}</p>
-                <p class="mt-1 text-3xl text-paper-700">{{ item.host }}</p>
-              </div>
-              <span
-                v-if="item.live"
-                class="rounded-full border border-red-800 px-3 py-1 text-lg text-red-900"
-                >直播中</span
-              >
+            <span class="text-4xl text-paper-700">{{ item.time }}</span>
+            <div>
+              <p class="font-retro text-5xl text-paper-900">{{ item.program.title }}</p>
+              <p class="mt-1 text-3xl text-paper-700">{{ item.program.host }}</p>
             </div>
-          </div>
+            <span
+              v-if="item.program.isLive"
+              class="rounded-full border border-red-800 px-3 py-1 text-lg text-red-900"
+              >直播中</span
+            >
+          </button>
         </div>
       </article>
 
@@ -39,7 +39,7 @@ const scheduleItems = [
         <h3 class="font-retro text-6xl text-paper-900">电台调频</h3>
 
         <div class="mt-7 text-center font-retro text-[108px] leading-none text-paper-900">
-          89.6 <span class="text-6xl">FM</span>
+          {{ currentProgram.cover.frequency.split(' ')[0] }} <span class="text-6xl">FM</span>
         </div>
 
         <div
@@ -56,11 +56,15 @@ const scheduleItems = [
           <div class="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-[#a43b2a]" />
         </div>
 
-        <div class="mx-auto mt-7 h-40 w-40 rounded-full border-4 border-paper-700 bg-[#cfae73] p-8">
-          <div class="h-full w-full rounded-full border border-paper-700 bg-paper-100" />
-        </div>
+        <button
+          type="button"
+          class="mx-auto mt-7 block h-40 w-40 rounded-full border-4 border-paper-700 bg-[#cfae73] p-8 transition hover:scale-105"
+          @click="radioStore.togglePlay(currentProgram.id)"
+        >
+          <span class="block h-full w-full rounded-full border border-paper-700 bg-paper-100" />
+        </button>
 
-        <p class="mt-7 font-retro text-5xl text-paper-900">FM 深夜电台｜给失眠的你</p>
+        <p class="mt-7 font-retro text-5xl text-paper-900">FM {{ currentProgram.title }}</p>
       </article>
     </section>
   </main>

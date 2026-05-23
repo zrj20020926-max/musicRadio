@@ -33,7 +33,7 @@ const { currentProgram, isPlaying } = storeToRefs(radioStore)
         </div>
 
         <h3 class="mt-6 font-retro text-7xl leading-tight text-paper-50">{{ currentProgram.title }}</h3>
-        <p class="mt-2 text-3xl text-paper-300">主播：{{ currentProgram.host }} · {{ currentProgram.time }}</p>
+        <p class="mt-2 text-3xl text-paper-300">主播：{{ currentProgram.host }} · {{ currentProgram.duration }}</p>
         <p class="mt-2 max-w-3xl text-2xl text-paper-300">欢迎来到深夜电台，希望我的声音，能陪你度过这段漫长的夜晚。</p>
 
         <div class="mt-6 flex items-end justify-between gap-4">

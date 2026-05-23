@@ -5,6 +5,8 @@ defineProps({
     required: true,
   },
 })
+
+const emit = defineEmits(['select'])
 </script>
 
 <template>
@@ -13,13 +15,19 @@ defineProps({
     <ul class="mt-4 space-y-3">
       <li
         v-for="schedule in schedules"
-        :key="schedule.slot"
-        class="flex items-center justify-between rounded-2xl bg-paper-50 px-4 py-3"
+        :key="schedule.time"
+        class="flex items-center justify-between rounded-2xl bg-paper-50 px-4 py-3 transition hover:border hover:border-paper-700/40"
       >
-        <span class="font-semibold text-paper-800">{{ schedule.slot }}</span>
+        <span class="font-semibold text-paper-800">{{ schedule.time }}</span>
         <div class="text-right">
-          <p class="text-paper-900">{{ schedule.title }}</p>
-          <p class="text-xs text-paper-700">{{ schedule.host }}</p>
+          <button
+            type="button"
+            class="text-paper-900 hover:underline"
+            @click="emit('select', schedule.program.id)"
+          >
+            {{ schedule.program.title }}
+          </button>
+          <p class="text-xs text-paper-700">{{ schedule.program.host }}</p>
         </div>
       </li>
     </ul>
