@@ -232,10 +232,7 @@ const isLivePlaying = computed(() => {
       <button
         type="button"
         class="empty-reset"
-        @click="
-          activeTag = '全部'
-          keyword = ''
-        "
+        @click="activeTag = '全部'; keyword = ''"
       >
         清空筛选
       </button>

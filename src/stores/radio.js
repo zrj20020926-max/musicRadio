@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
+import Hls from 'hls.js'
 import { fetchProgramsFromExternal, fetchRadioBrowserStations, mergeProgramsKeepUnique } from '../services/externalContent'
 import {
   hasProgramsContent,
@@ -12,10 +13,22 @@ import {
 } from '../storage/localContent'
 
 let audio = null
+let hls = null
 let hasRealSource = false
 if (typeof window !== 'undefined') {
   audio = new Audio()
   audio.preload = 'auto'
+}
+
+function destroyHls() {
+  if (hls) {
+    hls.destroy()
+    hls = null
+  }
+}
+
+function isHlsUrl(url) {
+  return url && (url.includes('.m3u8') || url.includes('m3u8'))
 }
 
 const FAVORITES_KEY = 'retro-radio-favorites'
@@ -513,27 +526,48 @@ export const useRadioStore = defineStore('radio', () => {
   }
 
   function playStation(station) {
-    if (!station?.url) return
+    if (!station?.url && !station?.url_resolved) return
     const requestId = ++currentRequestId
     clearTimeout(loadTimeoutId)
+    destroyHls()
     if (audio) { audio.pause(); audio.src = '' }
     currentStationId.value = station.stationuuid || station.name
     playbackStatus.value = 'loading'
     playbackError.value = ''
     hasRealSource = true
+    const streamUrl = station.url_resolved || station.url
     if (audio) {
-      audio.src = station.url_resolved || station.url
-      audio.load()
-      audio.play().catch(() => {})
+      if (isHlsUrl(streamUrl) && Hls.isSupported()) {
+        hls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 30 })
+        hls.loadSource(streamUrl)
+        hls.attachMedia(audio)
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (currentRequestId !== requestId) return
+          audio.play().catch(() => {})
+        })
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (currentRequestId !== requestId) return
+          if (data.fatal) {
+            playbackStatus.value = 'error'
+            playbackError.value = '流连接失败'
+            destroyHls()
+          }
+        })
+      } else {
+        audio.src = streamUrl
+        audio.load()
+        audio.play().catch(() => {})
+      }
     }
     loadTimeoutId = setTimeout(() => {
       if (currentRequestId !== requestId) return
       if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
         playbackStatus.value = 'error'
         playbackError.value = '连接超时'
+        destroyHls()
         if (audio) { audio.pause(); audio.src = '' }
       }
-    }, 12000)
+    }, 15000)
     pushToast(`正在连接：${station.name}`)
   }
 
@@ -541,6 +575,7 @@ export const useRadioStore = defineStore('radio', () => {
     clearTimeout(loadTimeoutId)
     currentStationId.value = null
     hasRealSource = false
+    destroyHls()
     if (audio) {
       audio.pause()
       audio.src = ''
