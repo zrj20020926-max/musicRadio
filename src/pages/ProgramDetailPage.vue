@@ -9,8 +9,15 @@ import { useRadioStore } from '../stores/radio'
 const route = useRoute()
 const router = useRouter()
 const radioStore = useRadioStore()
-const { programs, subscribed, favorites, isPlaying, playbackStatus, currentEpisodeIndex, durationLabel } =
-  storeToRefs(radioStore)
+const {
+  programs,
+  subscribed,
+  favorites,
+  isPlaying,
+  playbackStatus,
+  currentEpisodeIndex,
+  durationLabel,
+} = storeToRefs(radioStore)
 
 const program = computed(() => radioStore.getProgramById(route.params.id))
 const hasProgram = computed(() => Boolean(program.value))
@@ -34,11 +41,16 @@ const relatedPrograms = computed(() =>
 const statusText = computed(() => {
   if (!isCurrentProgram.value) return '点击播放'
   switch (playbackStatus.value) {
-    case 'loading': return '正在连接...'
-    case 'buffering': return '缓冲中...'
-    case 'playing': return '正在播放'
-    case 'error': return '连接失败'
-    default: return '已暂停'
+    case 'loading':
+      return '正在连接...'
+    case 'buffering':
+      return '缓冲中...'
+    case 'playing':
+      return '正在播放'
+    case 'error':
+      return '连接失败'
+    default:
+      return '已暂停'
   }
 })
 
@@ -128,14 +140,23 @@ function subscribeRelated(id) {
               <div v-else class="cover-placeholder">
                 <svg viewBox="0 0 64 64" fill="none" class="cover-vinyl">
                   <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="1.5" />
-                  <circle cx="32" cy="32" r="18" stroke="currentColor" stroke-width="1" opacity="0.4" />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="18"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    opacity="0.4"
+                  />
                   <circle cx="32" cy="32" r="8" stroke="currentColor" stroke-width="1.5" />
                   <circle cx="32" cy="32" r="2.5" fill="currentColor" />
                 </svg>
                 <span class="cover-freq">{{ program.cover?.frequency || 'FM' }}</span>
               </div>
               <div class="cover-gradient" />
-              <span v-if="program.isLive || (isCurrentProgram && isPlaying)" class="cover-onair">ON AIR</span>
+              <span v-if="program.isLive || (isCurrentProgram && isPlaying)" class="cover-onair"
+                >ON AIR</span
+              >
               <!-- Frequency dial decoration -->
               <div class="cover-dial">
                 <span v-for="i in 12" :key="i" class="dial-tick" />
@@ -145,15 +166,31 @@ function subscribeRelated(id) {
 
           <!-- Playback Control -->
           <div class="control-panel">
-            <button type="button" class="play-btn" :class="{ 'play-btn--active': isCurrentProgram && isPlaying }" @click="handlePlay">
-              <svg v-if="!isCurrentProgram || !isPlaying" viewBox="0 0 24 24" fill="currentColor" class="play-icon">
+            <button
+              type="button"
+              class="play-btn"
+              :class="{ 'play-btn--active': isCurrentProgram && isPlaying }"
+              @click="handlePlay"
+            >
+              <svg
+                v-if="!isCurrentProgram || !isPlaying"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="play-icon"
+              >
                 <path d="M8 5v14l11-7z" />
               </svg>
               <svg v-else viewBox="0 0 24 24" fill="currentColor" class="play-icon">
                 <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
               </svg>
             </button>
-            <span class="control-status" :class="{ 'control-status--live': isCurrentProgram && isPlaying, 'control-status--err': isCurrentProgram && playbackStatus === 'error' }">
+            <span
+              class="control-status"
+              :class="{
+                'control-status--live': isCurrentProgram && isPlaying,
+                'control-status--err': isCurrentProgram && playbackStatus === 'error',
+              }"
+            >
               {{ statusText }}
             </span>
             <div class="control-wave">
@@ -194,7 +231,9 @@ function subscribeRelated(id) {
           <!-- Action Buttons -->
           <div class="action-bar">
             <button type="button" class="act-primary" @click="handlePlay">
-              <svg viewBox="0 0 16 16" fill="currentColor" class="act-icon"><path d="M4 2l10 6-10 6z"/></svg>
+              <svg viewBox="0 0 16 16" fill="currentColor" class="act-icon">
+                <path d="M4 2l10 6-10 6z" />
+              </svg>
               <span>{{ isCurrentProgram && isPlaying ? '暂停' : '播放最新' }}</span>
             </button>
             <button
@@ -218,7 +257,11 @@ function subscribeRelated(id) {
           <!-- Description -->
           <div class="desc-section">
             <h3 class="section-title">节目简介</h3>
-            <div v-if="program.description" class="desc-body" :class="{ 'desc-body--expanded': descExpanded }">
+            <div
+              v-if="program.description"
+              class="desc-body"
+              :class="{ 'desc-body--expanded': descExpanded }"
+            >
               <p class="desc-text">{{ program.description }}</p>
             </div>
             <p v-else class="desc-empty">暂无节目简介</p>
@@ -243,7 +286,13 @@ function subscribeRelated(id) {
                 :class="{ 'ep-item--active': isCurrentProgram && index === currentEpisodeIndex }"
               >
                 <div class="ep-left">
-                  <span class="ep-dot" :class="{ 'ep-dot--active': isCurrentProgram && index === currentEpisodeIndex, 'ep-dot--live': episode.duration === '直播中' }" />
+                  <span
+                    class="ep-dot"
+                    :class="{
+                      'ep-dot--active': isCurrentProgram && index === currentEpisodeIndex,
+                      'ep-dot--live': episode.duration === '直播中',
+                    }"
+                  />
                   <span class="ep-date">{{ episode.pubDate || '--' }}</span>
                   <button
                     type="button"
@@ -255,14 +304,30 @@ function subscribeRelated(id) {
                   </button>
                 </div>
                 <div class="ep-right">
-                  <div v-if="isCurrentProgram && index === currentEpisodeIndex && isPlaying" class="ep-wave">
-                    <span v-for="i in 3" :key="i" class="ep-wave-bar" :style="{ animationDelay: `${i * 0.15}s` }" />
+                  <div
+                    v-if="isCurrentProgram && index === currentEpisodeIndex && isPlaying"
+                    class="ep-wave"
+                  >
+                    <span
+                      v-for="i in 3"
+                      :key="i"
+                      class="ep-wave-bar"
+                      :style="{ animationDelay: `${i * 0.15}s` }"
+                    />
                   </div>
-                  <span class="ep-duration" :class="{ 'ep-duration--live': episode.duration === '直播中' }">
+                  <span
+                    class="ep-duration"
+                    :class="{ 'ep-duration--live': episode.duration === '直播中' }"
+                  >
                     {{ displayDuration(episode, index) }}
                   </span>
-                  <button type="button" class="ep-play-btn" @click="handlePlayEpisode(index)" title="播放">
-                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6z"/></svg>
+                  <button
+                    type="button"
+                    class="ep-play-btn"
+                    @click="handlePlayEpisode(index)"
+                    title="播放"
+                  >
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2l10 6-10 6z" /></svg>
                   </button>
                 </div>
               </li>
@@ -313,8 +378,24 @@ function subscribeRelated(id) {
       <svg viewBox="0 0 80 80" fill="none" class="nf-icon">
         <rect x="10" y="20" width="60" height="50" rx="3" stroke="currentColor" stroke-width="2" />
         <path d="M10 20 L20 8 H60 L70 20" stroke="currentColor" stroke-width="2" fill="none" />
-        <line x1="30" y1="42" x2="50" y2="42" stroke="currentColor" stroke-width="1.5" opacity="0.4" />
-        <line x1="34" y1="50" x2="46" y2="50" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
+        <line
+          x1="30"
+          y1="42"
+          x2="50"
+          y2="42"
+          stroke="currentColor"
+          stroke-width="1.5"
+          opacity="0.4"
+        />
+        <line
+          x1="34"
+          y1="50"
+          x2="46"
+          y2="50"
+          stroke="currentColor"
+          stroke-width="1.5"
+          opacity="0.3"
+        />
       </svg>
       <h2 class="nf-title">这份节目档案暂时缺页了</h2>
       <p class="nf-hint">请返回节目列表继续收听</p>
@@ -346,7 +427,9 @@ function subscribeRelated(id) {
   padding: 0;
   transition: color 0.15s;
 }
-.crumb-link:hover { color: #704c2b; }
+.crumb-link:hover {
+  color: #704c2b;
+}
 .crumb-sep {
   font-size: 13px;
   color: #9a6c3a;
@@ -485,18 +568,32 @@ function subscribeRelated(id) {
   color: rgba(250, 244, 232, 0.9);
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.2s, transform 0.1s;
+  transition:
+    border-color 0.2s,
+    transform 0.1s;
 }
-.play-btn:hover { border-color: rgba(212, 160, 80, 0.7); transform: scale(1.05); }
-.play-btn--active { border-color: rgba(196, 64, 48, 0.6); }
-.play-icon { width: 18px; height: 18px; }
+.play-btn:hover {
+  border-color: rgba(212, 160, 80, 0.7);
+  transform: scale(1.05);
+}
+.play-btn--active {
+  border-color: rgba(196, 64, 48, 0.6);
+}
+.play-icon {
+  width: 18px;
+  height: 18px;
+}
 .control-status {
   font-size: 12px;
   color: rgba(250, 244, 232, 0.5);
   white-space: nowrap;
 }
-.control-status--live { color: rgba(120, 200, 120, 0.8); }
-.control-status--err { color: rgba(196, 64, 48, 0.8); }
+.control-status--live {
+  color: rgba(120, 200, 120, 0.8);
+}
+.control-status--err {
+  color: rgba(196, 64, 48, 0.8);
+}
 .control-wave {
   flex: 1;
   min-width: 0;
@@ -554,7 +651,9 @@ function subscribeRelated(id) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.host-tag--dim { opacity: 0.6; }
+.host-tag--dim {
+  opacity: 0.6;
+}
 
 /* === Right Column === */
 .right-col {
@@ -634,10 +733,18 @@ function subscribeRelated(id) {
   font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s, transform 0.1s;
+  transition:
+    background 0.15s,
+    transform 0.1s;
 }
-.act-primary:hover { background: #3a2418; transform: translateY(-1px); }
-.act-icon { width: 14px; height: 14px; }
+.act-primary:hover {
+  background: #3a2418;
+  transform: translateY(-1px);
+}
+.act-icon {
+  width: 14px;
+  height: 14px;
+}
 .act-secondary {
   padding: 9px 16px;
   border-radius: 8px;
@@ -650,7 +757,10 @@ function subscribeRelated(id) {
   white-space: nowrap;
   transition: all 0.15s;
 }
-.act-secondary:hover { border-color: rgba(110, 74, 43, 0.6); background: rgba(110, 74, 43, 0.05); }
+.act-secondary:hover {
+  border-color: rgba(110, 74, 43, 0.6);
+  background: rgba(110, 74, 43, 0.05);
+}
 .act-secondary--active {
   background: rgba(180, 130, 70, 0.1);
   border-color: rgba(180, 130, 70, 0.5);
@@ -705,7 +815,9 @@ function subscribeRelated(id) {
   padding: 0;
   transition: color 0.15s;
 }
-.desc-toggle:hover { color: #704c2b; }
+.desc-toggle:hover {
+  color: #704c2b;
+}
 
 /* Episode Section */
 .episode-section {
@@ -729,9 +841,13 @@ function subscribeRelated(id) {
   padding: 10px 12px;
   border-radius: 8px;
   border-left: 3px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
-.ep-item:hover { background: rgba(244, 234, 216, 0.6); }
+.ep-item:hover {
+  background: rgba(244, 234, 216, 0.6);
+}
 .ep-item--active {
   background: rgba(244, 234, 216, 0.8);
   border-left-color: rgba(180, 130, 70, 0.7);
@@ -781,7 +897,9 @@ function subscribeRelated(id) {
   min-width: 0;
   transition: color 0.15s;
 }
-.ep-title:hover { color: #9a6c3a; }
+.ep-title:hover {
+  color: #9a6c3a;
+}
 .ep-right {
   display: flex;
   align-items: center;
@@ -801,16 +919,25 @@ function subscribeRelated(id) {
   background: rgba(180, 130, 70, 0.8);
   animation: ep-bounce 0.6s ease-in-out infinite alternate;
 }
-.ep-wave-bar:nth-child(1) { height: 5px; }
-.ep-wave-bar:nth-child(2) { height: 10px; }
-.ep-wave-bar:nth-child(3) { height: 7px; }
+.ep-wave-bar:nth-child(1) {
+  height: 5px;
+}
+.ep-wave-bar:nth-child(2) {
+  height: 10px;
+}
+.ep-wave-bar:nth-child(3) {
+  height: 7px;
+}
 .ep-duration {
   font-size: 12px;
   font-family: 'Courier New', monospace;
   color: #9a6c3a;
   white-space: nowrap;
 }
-.ep-duration--live { color: #a43b2a; font-weight: 600; }
+.ep-duration--live {
+  color: #a43b2a;
+  font-weight: 600;
+}
 .ep-play-btn {
   width: 24px;
   height: 24px;
@@ -822,9 +949,14 @@ function subscribeRelated(id) {
   color: #704c2b;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
-.ep-play-btn svg { width: 10px; height: 10px; }
+.ep-play-btn svg {
+  width: 10px;
+  height: 10px;
+}
 .ep-play-btn:hover {
   background: rgba(44, 27, 16, 0.15);
   border-color: rgba(110, 74, 43, 0.5);
@@ -845,7 +977,9 @@ function subscribeRelated(id) {
   padding: 4px 0;
   transition: color 0.15s;
 }
-.ep-expand:hover { color: #704c2b; }
+.ep-expand:hover {
+  color: #704c2b;
+}
 
 /* === Related === */
 .related-section {
@@ -896,19 +1030,34 @@ function subscribeRelated(id) {
   cursor: pointer;
   transition: background 0.15s;
 }
-.nf-back:hover { background: #3a2418; }
+.nf-back:hover {
+  background: #3a2418;
+}
 
 /* === Animations === */
 @keyframes vinyl-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 @keyframes onair-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 @keyframes ep-bounce {
-  0% { transform: scaleY(0.5); }
-  100% { transform: scaleY(1.4); }
+  0% {
+    transform: scaleY(0.5);
+  }
+  100% {
+    transform: scaleY(1.4);
+  }
 }
 </style>
