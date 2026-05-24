@@ -11,6 +11,8 @@ const router = useRouter()
 const radioStore = useRadioStore()
 const {
   currentProgram,
+  currentStationId,
+  stations,
   isPlaying,
   progress,
   durationSec,
@@ -20,11 +22,16 @@ const {
   feedbackMessage,
 } = storeToRefs(radioStore)
 
+const currentStationObj = computed(() => {
+  if (!currentStationId.value) return null
+  return stations.value.find((s) => (s.stationuuid || s.name) === currentStationId.value) || null
+})
+
 const navItems = [
   { key: 'home', label: '首页', path: '/' },
   { key: 'discover', label: '发现', path: '/discover' },
-  { key: 'live', label: '直播', path: '/live' },
   { key: 'programs', label: '节目', path: '/programs' },
+  { key: 'live', label: '直播', path: '/live' },
   { key: 'stations', label: '电台', path: '/stations' },
   { key: 'comments', label: '留言', path: '/comments' },
   { key: 'profile', label: '我的', path: '/profile' },
@@ -52,8 +59,9 @@ function handleNavigate(key) {
       <RouterView />
     </div>
     <GlobalPlayerBar
-      v-if="currentProgram"
+      v-if="currentProgram || currentStationObj"
       :program="currentProgram"
+      :station="currentStationObj"
       :is-playing="isPlaying"
       :progress="progress"
       :duration-sec="durationSec"
@@ -61,7 +69,7 @@ function handleNavigate(key) {
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
       :feedback="feedbackMessage"
-      @toggle="radioStore.togglePlay(currentProgram.id)"
+      @toggle="currentStationId ? radioStore.toggleStation() : radioStore.togglePlay(currentProgram?.id)"
       @seek="radioStore.setProgress"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"

@@ -22,8 +22,11 @@ const FAVORITES_KEY = 'retro-radio-favorites'
 const SUBSCRIBED_KEY = 'retro-radio-subscribed'
 const COMMENTS_KEY = 'retro-radio-comments'
 const CURRENT_KEY = 'retro-radio-current-program'
+const CURRENT_STATION_KEY = 'retro-radio-current-station'
 const PLAY_HISTORY_KEY = 'retro-radio-play-history'
 const QUEUE_KEY = 'retro-radio-play-queue'
+const FAVORITE_STATIONS_KEY = 'retro-radio-favorite-stations'
+const SUBSCRIBED_STATIONS_KEY = 'retro-radio-subscribed-stations'
 
 const EMPTY_PROGRAM = {
   id: '',
@@ -76,9 +79,12 @@ export const useRadioStore = defineStore('radio', () => {
 
   const isPlaying = ref(false)
   const currentProgramId = ref(loadString(CURRENT_KEY, programs.value[0]?.id || ''))
-  const currentStationId = ref(null)
+  const savedStation = loadString(CURRENT_STATION_KEY, '')
+  const currentStationId = ref(savedStation || null)
   const favorites = ref(new Set(loadArray(FAVORITES_KEY)))
   const subscribed = ref(new Set(loadArray(SUBSCRIBED_KEY)))
+  const favoriteStations = ref(new Set(loadArray(FAVORITE_STATIONS_KEY)))
+  const subscribedStations = ref(new Set(loadArray(SUBSCRIBED_STATIONS_KEY)))
   const comments = ref(loadArray(COMMENTS_KEY, []))
   const playHistory = ref(loadArray(PLAY_HISTORY_KEY))
   const queue = ref(
@@ -170,6 +176,12 @@ export const useRadioStore = defineStore('radio', () => {
   const subscribedPrograms = computed(() =>
     programs.value.filter((item) => subscribed.value.has(item.id)),
   )
+  const favoriteStationList = computed(() =>
+    stations.value.filter((s) => favoriteStations.value.has(s.stationuuid)),
+  )
+  const subscribedStationList = computed(() =>
+    stations.value.filter((s) => subscribedStations.value.has(s.stationuuid)),
+  )
   const recentPrograms = computed(() =>
     playHistory.value
       .map((id) => programMap.value.get(id))
@@ -178,8 +190,8 @@ export const useRadioStore = defineStore('radio', () => {
   )
 
   const stats = computed(() => ({
-    subscribedCount: subscribed.value.size,
-    favoriteCount: favorites.value.size,
+    subscribedCount: subscribed.value.size + subscribedStations.value.size,
+    favoriteCount: favorites.value.size + favoriteStations.value.size,
     listenHours: Math.max(24, recentPrograms.value.length * 12 + 48),
   }))
 
@@ -360,6 +372,46 @@ export const useRadioStore = defineStore('radio', () => {
     }
   }
 
+  function toggleFavoriteStation(stationuuid) {
+    if (favoriteStations.value.has(stationuuid)) {
+      favoriteStations.value.delete(stationuuid)
+      pushToast('已取消收藏电台')
+    } else {
+      favoriteStations.value.add(stationuuid)
+      pushToast('已收藏电台')
+    }
+  }
+
+  function toggleSubscribeStation(stationuuid) {
+    if (subscribedStations.value.has(stationuuid)) {
+      subscribedStations.value.delete(stationuuid)
+      pushToast('已取消订阅电台')
+    } else {
+      subscribedStations.value.add(stationuuid)
+      pushToast('已订阅电台')
+    }
+  }
+
+  const stationsRefreshing = ref(false)
+
+  async function refreshStations() {
+    stationsRefreshing.value = true
+    try {
+      const incoming = await fetchRadioBrowserStations()
+      if (incoming.length) {
+        stations.value = incoming
+        saveStationsContent(incoming)
+        pushToast(`已更新 ${incoming.length} 个电台`)
+      } else {
+        pushToast('电台更新失败')
+      }
+    } catch {
+      pushToast('电台更新失败')
+    } finally {
+      stationsRefreshing.value = false
+    }
+  }
+
   function addComment(content) {
     comments.value.unshift({ id: Date.now(), user: '你', content, liked: 0 })
     pushToast('留言发送成功')
@@ -435,6 +487,32 @@ export const useRadioStore = defineStore('radio', () => {
     isPlaying.value = false
   }
 
+  function toggleStation() {
+    if (!currentStationId.value) return
+    if (isPlaying.value) {
+      if (audio) audio.pause()
+      isPlaying.value = false
+    } else {
+      if (audio && audio.src) {
+        audio.play().catch(() => {})
+      } else {
+        const stationObj = stations.value.find(
+          (s) => (s.stationuuid || s.name) === currentStationId.value,
+        )
+        if (stationObj) {
+          const url = stationObj.url_resolved || stationObj.url
+          if (url) {
+            audio.src = url
+            audio.load()
+            audio.play().catch(() => {})
+            hasRealSource = true
+          }
+        }
+      }
+      isPlaying.value = true
+    }
+  }
+
   if (typeof window !== 'undefined' && audio) {
     audio.addEventListener('durationchange', () => {
       if (Number.isFinite(audio.duration)) audioDuration.value = audio.duration
@@ -451,7 +529,21 @@ export const useRadioStore = defineStore('radio', () => {
       console.warn('[audio] playback error', audio.error)
     })
 
-    loadAudioSource()
+    if (currentStationId.value) {
+      const savedStationObj = stations.value.find(
+        (s) => (s.stationuuid || s.name) === currentStationId.value,
+      )
+      if (savedStationObj) {
+        const url = savedStationObj.url_resolved || savedStationObj.url
+        if (url) {
+          audio.src = url
+          audio.load()
+          hasRealSource = true
+        }
+      }
+    } else {
+      loadAudioSource()
+    }
 
     window.setInterval(() => {
       if (sleepDeadline.value && Date.now() >= sleepDeadline.value) {
@@ -483,10 +575,27 @@ export const useRadioStore = defineStore('radio', () => {
     (value) => window.localStorage.setItem(SUBSCRIBED_KEY, JSON.stringify(Array.from(value))),
     { deep: true },
   )
+  watch(
+    favoriteStations,
+    (value) => window.localStorage.setItem(FAVORITE_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    { deep: true },
+  )
+  watch(
+    subscribedStations,
+    (value) => window.localStorage.setItem(SUBSCRIBED_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    { deep: true },
+  )
   watch(comments, (value) => window.localStorage.setItem(COMMENTS_KEY, JSON.stringify(value)), {
     deep: true,
   })
   watch(currentProgramId, (value) => window.localStorage.setItem(CURRENT_KEY, value))
+  watch(currentStationId, (value) => {
+    if (value) {
+      window.localStorage.setItem(CURRENT_STATION_KEY, value)
+    } else {
+      window.localStorage.removeItem(CURRENT_STATION_KEY)
+    }
+  })
   watch(
     playHistory,
     (value) => window.localStorage.setItem(PLAY_HISTORY_KEY, JSON.stringify(value)),
@@ -516,6 +625,10 @@ export const useRadioStore = defineStore('radio', () => {
     todaySchedulePrograms,
     favoritePrograms,
     subscribedPrograms,
+    favoriteStationList,
+    subscribedStationList,
+    favoriteStations,
+    subscribedStations,
     recentPrograms,
     favorites,
     subscribed,
@@ -523,6 +636,7 @@ export const useRadioStore = defineStore('radio', () => {
     stats,
     queue,
     feedbackMessage,
+    stationsRefreshing,
     progress,
     progressRatio,
     progressLabel,
@@ -539,10 +653,14 @@ export const useRadioStore = defineStore('radio', () => {
     setSleepTimer,
     toggleFavorite,
     toggleSubscribe,
+    toggleFavoriteStation,
+    toggleSubscribeStation,
+    refreshStations,
     addComment,
     getProgramById,
     updateExternalContent,
     playStation,
+    toggleStation,
     stopStation,
   }
 })

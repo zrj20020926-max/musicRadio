@@ -1,6 +1,7 @@
 <script setup>
 const props = defineProps({
-  program: { type: Object, required: true },
+  program: { type: Object, default: null },
+  station: { type: Object, default: null },
   isPlaying: { type: Boolean, required: true },
   progress: { type: Number, required: true },
   durationSec: { type: Number, required: true },
@@ -41,12 +42,16 @@ function formatListeners(value) {
           >
             {{ props.isPlaying ? 'ON AIR' : 'PAUSED' }}
           </span>
-          <span class="text-xs text-paper-700"
+          <span v-if="props.station" class="text-xs font-medium text-amber-700">LIVE</span>
+          <span v-else class="text-xs text-paper-700"
             >{{ props.progressLabel }} / {{ props.durationLabel }}</span
           >
         </div>
-        <p class="mt-1 truncate font-retro text-3xl text-paper-900">
-          {{ props.program.category }} · {{ props.program.title }}
+        <p v-if="props.station" class="mt-1 truncate font-retro text-3xl text-paper-900">
+          {{ props.station.name }}
+        </p>
+        <p v-else class="mt-1 truncate font-retro text-3xl text-paper-900">
+          {{ props.program?.category }} · {{ props.program?.title }}
         </p>
         <p class="truncate text-lg text-paper-700">
           <Transition
@@ -61,8 +66,11 @@ function formatListeners(value) {
             <span v-if="props.feedback" :key="props.feedback" class="font-medium text-[#7f2e20]">{{
               props.feedback
             }}</span>
+            <span v-else-if="props.station" key="station"
+              >{{ props.station.country }} · {{ (props.station.codec || '').toUpperCase() }} {{ props.station.bitrate }}kbps</span
+            >
             <span v-else key="default"
-              >主播 {{ props.program.host }} · {{ formatListeners(props.program.listeners) }} 人收听
+              >主播 {{ props.program?.host }} · {{ formatListeners(props.program?.listeners) }} 人收听
               · 下一集：{{ props.nextTitle }}</span
             >
           </Transition>
@@ -71,6 +79,7 @@ function formatListeners(value) {
 
       <div class="flex items-center gap-2">
         <button
+          v-if="!props.station"
           type="button"
           class="rounded-full border border-paper-700 px-3 py-1 text-paper-900 hover:bg-paper-100"
           @click="emit('prev')"
@@ -103,6 +112,7 @@ function formatListeners(value) {
           </svg>
         </button>
         <button
+          v-if="!props.station"
           type="button"
           class="rounded-full border border-paper-700 px-3 py-1 text-paper-900 hover:bg-paper-100"
           @click="emit('next')"
@@ -111,7 +121,7 @@ function formatListeners(value) {
         </button>
       </div>
 
-      <div class="flex w-[38%] min-w-[300px] items-center gap-2">
+      <div v-if="!props.station" class="flex w-[38%] min-w-[300px] items-center gap-2">
         <span class="w-12 text-right text-sm text-paper-700">{{ props.progressLabel }}</span>
         <input
           class="h-2 w-full accent-[#6a4329]"
@@ -122,6 +132,9 @@ function formatListeners(value) {
           @input="handleSeek"
         />
         <span class="w-12 text-sm text-paper-700">{{ props.durationLabel }}</span>
+      </div>
+      <div v-else class="flex items-center gap-2">
+        <span class="rounded-full bg-[#a43b2a] px-3 py-1 text-xs font-bold tracking-widest text-white">LIVE</span>
       </div>
     </div>
   </section>

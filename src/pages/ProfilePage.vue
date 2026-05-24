@@ -6,8 +6,16 @@ import { useRadioStore } from '../stores/radio'
 
 const router = useRouter()
 const radioStore = useRadioStore()
-const { subscribedPrograms, favoritePrograms, recentPrograms, currentProgram, isPlaying, stats } =
-  storeToRefs(radioStore)
+const {
+  subscribedPrograms,
+  favoritePrograms,
+  subscribedStationList,
+  favoriteStationList,
+  recentPrograms,
+  currentProgram,
+  isPlaying,
+  stats,
+} = storeToRefs(radioStore)
 
 function goProgramDetail(programId) {
   router.push(`/programs/${programId}`)
@@ -21,7 +29,10 @@ function goProgramDetail(programId) {
     <section class="mt-6 grid grid-cols-[1.4fr_1fr] gap-6 max-[1100px]:grid-cols-1">
       <article class="retro-card rounded-[1.8rem] p-6">
         <h3 class="font-retro text-5xl text-paper-900">我的订阅</h3>
-        <ul class="mt-4 space-y-3">
+
+        <!-- 节目订阅 -->
+        <p class="mt-4 text-xl font-medium text-paper-700">节目</p>
+        <ul class="mt-2 space-y-3">
           <li
             v-for="program in subscribedPrograms"
             :key="program.id"
@@ -46,12 +57,43 @@ function goProgramDetail(programId) {
             v-if="!subscribedPrograms.length"
             class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
           >
-            暂无订阅
+            暂无订阅节目
+          </li>
+        </ul>
+
+        <!-- 电台订阅 -->
+        <p class="mt-4 text-xl font-medium text-paper-700">国际电台</p>
+        <ul class="mt-2 space-y-3">
+          <li
+            v-for="station in subscribedStationList"
+            :key="station.stationuuid"
+            class="flex items-center justify-between rounded-2xl border border-paper-600/45 bg-paper-100/85 px-4 py-3"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-retro text-3xl text-paper-900">{{ station.name }}</p>
+              <p class="text-xl text-paper-600">{{ station.country }} · {{ station.codec }}</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full bg-[#24160f] px-4 py-1 text-xl text-paper-50 transition hover:bg-[#2f1d14]"
+              @click="radioStore.playStation(station)"
+            >
+              收听
+            </button>
+          </li>
+          <li
+            v-if="!subscribedStationList.length"
+            class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
+          >
+            暂无订阅电台
           </li>
         </ul>
 
         <h3 class="mt-8 font-retro text-5xl text-paper-900">我的收藏</h3>
-        <ul class="mt-4 space-y-3">
+
+        <!-- 节目收藏 -->
+        <p class="mt-4 text-xl font-medium text-paper-700">节目</p>
+        <ul class="mt-2 space-y-3">
           <li
             v-for="program in favoritePrograms"
             :key="program.id"
@@ -76,7 +118,35 @@ function goProgramDetail(programId) {
             v-if="!favoritePrograms.length"
             class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
           >
-            暂无收藏
+            暂无收藏节目
+          </li>
+        </ul>
+
+        <!-- 电台收藏 -->
+        <p class="mt-4 text-xl font-medium text-paper-700">国际电台</p>
+        <ul class="mt-2 space-y-3">
+          <li
+            v-for="station in favoriteStationList"
+            :key="station.stationuuid"
+            class="flex items-center justify-between rounded-2xl border border-paper-600/45 bg-paper-100/85 px-4 py-3"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-retro text-3xl text-paper-900">{{ station.name }}</p>
+              <p class="text-xl text-paper-600">{{ station.country }} · {{ station.codec }}</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-paper-700 px-4 py-1 text-xl text-paper-800 hover:bg-paper-200"
+              @click="radioStore.playStation(station)"
+            >
+              播放
+            </button>
+          </li>
+          <li
+            v-if="!favoriteStationList.length"
+            class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
+          >
+            暂无收藏电台
           </li>
         </ul>
       </article>

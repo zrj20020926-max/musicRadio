@@ -132,18 +132,19 @@ export async function fetchEpisodesByItunes(collectionId) {
 }
 
 export async function fetchRadioBrowserStations() {
-  const url = 'https://de1.api.radio-browser.info/json/stations/bytag/music?limit=50'
+  const url = `https://de1.api.radio-browser.info/json/stations/search?tag=music&hidebroken=true&order=random&limit=50&_t=${Date.now()}`
   try {
-    console.log('[update-programs] fetching', url)
-    const response = await fetch(url)
+    console.log('[radio] fetching stations (random)')
+    const response = await fetch(url, { cache: 'no-store' })
     if (!response.ok) {
-      console.error('[update-programs] radio browser bad response', response.status)
+      console.error('[radio] bad response', response.status)
       return []
     }
     const data = await response.json()
-    return Array.isArray(data) ? data : []
+    if (!Array.isArray(data)) return []
+    return data.filter((s) => s.url_resolved || s.url)
   } catch (error) {
-    console.error('[update-programs] radio browser request failed', error)
+    console.error('[radio] request failed', error)
     return []
   }
 }
