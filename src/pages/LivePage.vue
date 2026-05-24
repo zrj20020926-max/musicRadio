@@ -5,7 +5,14 @@ import LiveVisualStage from '../components/LiveVisualStage.vue'
 import { useRadioStore } from '../stores/radio'
 
 const radioStore = useRadioStore()
-const { stations, currentStationId, isPlaying, favoriteStations, subscribedStations, stationsRefreshing } = storeToRefs(radioStore)
+const {
+  stations,
+  currentStationId,
+  isPlaying,
+  favoriteStations,
+  subscribedStations,
+  stationsRefreshing,
+} = storeToRefs(radioStore)
 const brokenStationIcons = ref(new Set())
 const loadedStationIcons = ref(new Set())
 
@@ -64,8 +71,18 @@ function markStationIconBroken(station) {
                 :disabled="stationsRefreshing"
                 @click="radioStore.refreshStations()"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="panel-refresh-icon" :class="{ 'is-spinning': stationsRefreshing }">
-                  <path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.312.311a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm-9.624-2.848a.75.75 0 00.726.943h3.634a.75.75 0 000-1.5H7.615l.312-.311a7 7 0 0111.712 3.138.75.75 0 001.449-.39 5.5 5.5 0 00-9.201-2.466l-.312.311V4.268a.75.75 0 00-1.5 0v3.634a.75.75 0 00.113.674z" clip-rule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  class="panel-refresh-icon"
+                  :class="{ 'is-spinning': stationsRefreshing }"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.312.311a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm-9.624-2.848a.75.75 0 00.726.943h3.634a.75.75 0 000-1.5H7.615l.312-.311a7 7 0 0111.712 3.138.75.75 0 001.449-.39 5.5 5.5 0 00-9.201-2.466l-.312.311V4.268a.75.75 0 00-1.5 0v3.634a.75.75 0 00.113.674z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
                 <span>{{ stationsRefreshing ? '更新中...' : '换一批' }}</span>
               </button>
@@ -85,17 +102,16 @@ function markStationIconBroken(station) {
             <p class="now-label">NOW PLAYING</p>
             <p class="now-name">{{ currentStation().name }}</p>
             <p class="now-meta">
-              {{ currentStation().country }} · {{ currentStation().codec }} {{ currentStation().bitrate }}kbps
+              {{ currentStation().country }} · {{ currentStation().codec }}
+              {{ currentStation().bitrate }}kbps
             </p>
             <p v-if="currentStation().language" class="now-meta">
               {{ currentStation().language }}
-              <span v-if="currentStation().tags"> · {{ currentStation().tags.split(',').slice(0, 3).join(', ') }}</span>
+              <span v-if="currentStation().tags">
+                · {{ currentStation().tags.split(',').slice(0, 3).join(', ') }}</span
+              >
             </p>
-            <button
-              type="button"
-              class="now-stop"
-              @click="radioStore.stopStation()"
-            >Stop</button>
+            <button type="button" class="now-stop" @click="radioStore.stopStation()">Stop</button>
           </div>
           <div v-else class="panel-hint">Pick a station to start listening</div>
 
@@ -107,13 +123,13 @@ function markStationIconBroken(station) {
               class="station-item"
               :class="{ 'station-item--active': currentStationId === station.stationuuid }"
             >
-              <button
-                type="button"
-                class="station-main"
-                @click="radioStore.playStation(station)"
-              >
+              <button type="button" class="station-main" @click="radioStore.playStation(station)">
                 <div
-                  v-if="!station.favicon || isStationIconBroken(station) || !isStationIconLoaded(station)"
+                  v-if="
+                    !station.favicon ||
+                    isStationIconBroken(station) ||
+                    !isStationIconLoaded(station)
+                  "
                   class="station-icon station-icon--fallback"
                 >
                   FM
@@ -122,7 +138,9 @@ function markStationIconBroken(station) {
                   v-if="station.favicon && !isStationIconBroken(station)"
                   :src="station.favicon"
                   class="station-icon"
-                  :class="isStationIconLoaded(station) ? 'station-icon--show' : 'station-icon--hide'"
+                  :class="
+                    isStationIconLoaded(station) ? 'station-icon--show' : 'station-icon--hide'
+                  "
                   alt=""
                   loading="lazy"
                   referrerpolicy="no-referrer"
@@ -138,7 +156,9 @@ function markStationIconBroken(station) {
                 <button
                   type="button"
                   class="station-action-btn"
-                  :class="{ 'station-action-btn--active': favoriteStations.has(station.stationuuid) }"
+                  :class="{
+                    'station-action-btn--active': favoriteStations.has(station.stationuuid),
+                  }"
                   @click.stop="radioStore.toggleFavoriteStation(station.stationuuid)"
                 >
                   {{ favoriteStations.has(station.stationuuid) ? '已收藏' : '收藏' }}
@@ -146,7 +166,9 @@ function markStationIconBroken(station) {
                 <button
                   type="button"
                   class="station-action-btn"
-                  :class="{ 'station-action-btn--subscribed': subscribedStations.has(station.stationuuid) }"
+                  :class="{
+                    'station-action-btn--subscribed': subscribedStations.has(station.stationuuid),
+                  }"
                   @click.stop="radioStore.toggleSubscribeStation(station.stationuuid)"
                 >
                   {{ subscribedStations.has(station.stationuuid) ? '已订阅' : '订阅' }}
@@ -209,7 +231,9 @@ function markStationIconBroken(station) {
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .panel-refresh-btn:hover {
   background: rgba(80, 45, 25, 0.7);
@@ -359,7 +383,9 @@ function markStationIconBroken(station) {
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 .station-item:hover {
   background: rgba(100, 60, 30, 0.2);
@@ -399,7 +425,10 @@ function markStationIconBroken(station) {
   background: rgba(60, 35, 18, 0.4);
   color: rgba(250, 244, 232, 0.55);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
   white-space: nowrap;
 }
 .station-action-btn:hover {
@@ -486,20 +515,40 @@ function markStationIconBroken(station) {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 @keyframes badge-flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-  52% { opacity: 1; }
-  54% { opacity: 0.75; }
-  56% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  52% {
+    opacity: 1;
+  }
+  54% {
+    opacity: 0.75;
+  }
+  56% {
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

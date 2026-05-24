@@ -27,6 +27,7 @@ const PLAY_HISTORY_KEY = 'retro-radio-play-history'
 const QUEUE_KEY = 'retro-radio-play-queue'
 const FAVORITE_STATIONS_KEY = 'retro-radio-favorite-stations'
 const SUBSCRIBED_STATIONS_KEY = 'retro-radio-subscribed-stations'
+const STATION_CACHE_KEY = 'retro-radio-station-cache'
 
 const EMPTY_PROGRAM = {
   id: '',
@@ -85,6 +86,7 @@ export const useRadioStore = defineStore('radio', () => {
   const subscribed = ref(new Set(loadArray(SUBSCRIBED_KEY)))
   const favoriteStations = ref(new Set(loadArray(FAVORITE_STATIONS_KEY)))
   const subscribedStations = ref(new Set(loadArray(SUBSCRIBED_STATIONS_KEY)))
+  const stationCache = ref(new Map(loadArray(STATION_CACHE_KEY).map((s) => [s.stationuuid, s])))
   const comments = ref(loadArray(COMMENTS_KEY, []))
   const playHistory = ref(loadArray(PLAY_HISTORY_KEY))
   const queue = ref(
@@ -176,12 +178,22 @@ export const useRadioStore = defineStore('radio', () => {
   const subscribedPrograms = computed(() =>
     programs.value.filter((item) => subscribed.value.has(item.id)),
   )
-  const favoriteStationList = computed(() =>
-    stations.value.filter((s) => favoriteStations.value.has(s.stationuuid)),
-  )
-  const subscribedStationList = computed(() =>
-    stations.value.filter((s) => subscribedStations.value.has(s.stationuuid)),
-  )
+  const favoriteStationList = computed(() => {
+    const result = []
+    for (const id of favoriteStations.value) {
+      const s = stations.value.find((st) => st.stationuuid === id) || stationCache.value.get(id)
+      if (s) result.push(s)
+    }
+    return result
+  })
+  const subscribedStationList = computed(() => {
+    const result = []
+    for (const id of subscribedStations.value) {
+      const s = stations.value.find((st) => st.stationuuid === id) || stationCache.value.get(id)
+      if (s) result.push(s)
+    }
+    return result
+  })
   const recentPrograms = computed(() =>
     playHistory.value
       .map((id) => programMap.value.get(id))
@@ -378,6 +390,7 @@ export const useRadioStore = defineStore('radio', () => {
       pushToast('已取消收藏电台')
     } else {
       favoriteStations.value.add(stationuuid)
+      cacheStation(stationuuid)
       pushToast('已收藏电台')
     }
   }
@@ -388,7 +401,16 @@ export const useRadioStore = defineStore('radio', () => {
       pushToast('已取消订阅电台')
     } else {
       subscribedStations.value.add(stationuuid)
+      cacheStation(stationuuid)
       pushToast('已订阅电台')
+    }
+  }
+
+  function cacheStation(stationuuid) {
+    if (stationCache.value.has(stationuuid)) return
+    const obj = stations.value.find((s) => s.stationuuid === stationuuid)
+    if (obj) {
+      stationCache.value.set(stationuuid, obj)
     }
   }
 
@@ -583,6 +605,11 @@ export const useRadioStore = defineStore('radio', () => {
   watch(
     subscribedStations,
     (value) => window.localStorage.setItem(SUBSCRIBED_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    { deep: true },
+  )
+  watch(
+    stationCache,
+    (value) => window.localStorage.setItem(STATION_CACHE_KEY, JSON.stringify(Array.from(value.values()))),
     { deep: true },
   )
   watch(comments, (value) => window.localStorage.setItem(COMMENTS_KEY, JSON.stringify(value)), {
