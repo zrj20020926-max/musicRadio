@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { fetchProgramsFromExternal, fetchRadioBrowserStations } from '../services/externalContent'
+import { fetchProgramsFromExternal, fetchRadioBrowserStations, mergeProgramsKeepUnique } from '../services/externalContent'
 import {
   hasProgramsContent,
   loadLastUpdatedAt,
@@ -493,6 +493,25 @@ export const useRadioStore = defineStore('radio', () => {
     }
   }
 
+  const loadingMore = ref(false)
+
+  async function loadMorePrograms() {
+    if (loadingMore.value) return
+    loadingMore.value = true
+    try {
+      const incoming = await fetchProgramsFromExternal()
+      if (incoming.length) {
+        programs.value = mergeProgramsKeepUnique(programs.value, incoming)
+        saveProgramsContent(programs.value)
+        ensureCurrentProgramValid()
+      }
+    } catch (error) {
+      console.error('[load-more] failed', error)
+    } finally {
+      loadingMore.value = false
+    }
+  }
+
   function playStation(station) {
     if (!station?.url) return
     const requestId = ++currentRequestId
@@ -757,6 +776,8 @@ export const useRadioStore = defineStore('radio', () => {
     addComment,
     getProgramById,
     updateExternalContent,
+    loadMorePrograms,
+    loadingMore,
     playStation,
     toggleStation,
     stopStation,
