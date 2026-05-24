@@ -23,9 +23,13 @@ function goProgramDetail(programId) {
   <main class="mt-8 w-full">
     <h2 class="font-retro text-6xl text-paper-900">发现</h2>
 
-    <section class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.85fr)_minmax(240px,0.62fr)] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(250px,0.58fr)] 2xl:gap-8">
+    <section
+      class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.85fr)_minmax(240px,0.62fr)] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,2fr)_minmax(250px,0.58fr)] 2xl:gap-8"
+    >
       <!-- Broadcasting Console Hero -->
-      <article class="console-hero min-w-0 overflow-hidden rounded-[2rem] border border-[#4a3020]/60 shadow-soft">
+      <article
+        class="console-hero min-w-0 overflow-hidden rounded-[2rem] border border-[#4a3020]/60 shadow-soft"
+      >
         <!-- Console body -->
         <div class="console-body">
           <!-- Top panel: frequency display -->
@@ -98,7 +102,12 @@ function goProgramDetail(programId) {
             </div>
 
             <!-- Play control: big illuminated toggle -->
-            <button type="button" class="broadcast-toggle" :class="{ 'is-on': isPlaying }" @click="radioStore.togglePlay(liveProgram.id)">
+            <button
+              type="button"
+              class="broadcast-toggle"
+              :class="{ 'is-on': isPlaying }"
+              @click="radioStore.togglePlay(liveProgram.id)"
+            >
               <span class="toggle-light" />
               <span class="toggle-label">{{ isPlaying ? 'BROADCASTING' : 'START' }}</span>
             </button>
@@ -106,14 +115,21 @@ function goProgramDetail(programId) {
             <!-- EQ dots (decorative) -->
             <div class="eq-dots">
               <div v-for="i in 8" :key="i" class="eq-col">
-                <span v-for="j in 5" :key="j" class="eq-dot" :class="{ 'eq-dot--lit': isPlaying && j <= 3 + Math.floor(Math.random() * 2) }" />
+                <span
+                  v-for="j in 5"
+                  :key="j"
+                  class="eq-dot"
+                  :class="{ 'eq-dot--lit': isPlaying && j <= 3 + Math.floor(Math.random() * 2) }"
+                />
               </div>
             </div>
           </div>
         </div>
       </article>
 
-      <aside class="min-w-0 rounded-[2rem] border border-paper-600/50 bg-paper-200/90 p-5 shadow-soft sm:p-6 xl:p-7">
+      <aside
+        class="min-w-0 rounded-[2rem] border border-paper-600/50 bg-paper-200/90 p-5 shadow-soft sm:p-6 xl:p-7"
+      >
         <h3 class="text-center font-retro text-4xl text-paper-900 sm:text-5xl">电台特色</h3>
         <div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:mt-8 sm:gap-x-6 sm:gap-y-8">
           <div
@@ -159,7 +175,10 @@ function goProgramDetail(programId) {
             >
               {{ program.title }}↗
             </button>
-            <p class="mt-1 truncate text-xl text-paper-700" :title="`${program.duration} · ${program.listeners} 次收听`">
+            <p
+              class="mt-1 truncate text-xl text-paper-700"
+              :title="`${program.duration} · ${program.listeners} 次收听`"
+            >
               {{ program.duration }} · {{ program.listeners }} 次收听
             </p>
           </div>
@@ -273,14 +292,31 @@ function goProgramDetail(programId) {
   border-radius: 50%;
   border: 1px solid rgba(80, 60, 40, 0.5);
   opacity: 0.25;
-  transition: opacity 0.3s, box-shadow 0.3s;
+  transition:
+    opacity 0.3s,
+    box-shadow 0.3s;
 }
-.lamp--red { background: #c44030; }
-.lamp--amber { background: #c4a030; }
-.lamp--green { background: #40a040; }
-.lamp--on.lamp--red { opacity: 1; box-shadow: 0 0 8px rgba(196, 64, 48, 0.6); }
-.lamp--on.lamp--amber { opacity: 1; box-shadow: 0 0 8px rgba(196, 160, 48, 0.5); }
-.lamp--on.lamp--green { opacity: 1; box-shadow: 0 0 8px rgba(64, 160, 64, 0.5); }
+.lamp--red {
+  background: #c44030;
+}
+.lamp--amber {
+  background: #c4a030;
+}
+.lamp--green {
+  background: #40a040;
+}
+.lamp--on.lamp--red {
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(196, 64, 48, 0.6);
+}
+.lamp--on.lamp--amber {
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(196, 160, 48, 0.5);
+}
+.lamp--on.lamp--green {
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(64, 160, 64, 0.5);
+}
 
 /* --- Middle Panel: VU + Info --- */
 .console-mid {
@@ -329,14 +365,23 @@ function goProgramDetail(programId) {
   right: 0;
   height: 20%;
   border-radius: 0 0 3px 3px;
-  background: linear-gradient(to top, rgba(64, 180, 64, 0.8), rgba(180, 180, 48, 0.8) 70%, rgba(196, 64, 48, 0.8));
+  background: linear-gradient(
+    to top,
+    rgba(64, 180, 64, 0.8),
+    rgba(180, 180, 48, 0.8) 70%,
+    rgba(196, 64, 48, 0.8)
+  );
   transition: height 0.3s ease;
 }
 .vu-fill.vu-animated {
   animation: vu-bounce 0.8s ease-in-out infinite alternate;
 }
-.vu-fill--l.vu-animated { animation-delay: 0s; }
-.vu-fill--r.vu-animated { animation-delay: 0.15s; }
+.vu-fill--l.vu-animated {
+  animation-delay: 0s;
+}
+.vu-fill--r.vu-animated {
+  animation-delay: 0.15s;
+}
 
 /* Center info */
 .console-info {
@@ -440,7 +485,9 @@ function goProgramDetail(programId) {
   border: 1px solid rgba(80, 55, 30, 0.5);
   background: linear-gradient(to bottom, #1a1210, #0f0a07);
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.1s;
+  transition:
+    border-color 0.2s,
+    transform 0.1s;
 }
 .broadcast-toggle:hover {
   border-color: rgba(120, 90, 50, 0.6);
@@ -454,11 +501,15 @@ function goProgramDetail(programId) {
   border-radius: 50%;
   background: #3a2820;
   border: 1px solid rgba(80, 55, 30, 0.4);
-  transition: background 0.3s, box-shadow 0.3s;
+  transition:
+    background 0.3s,
+    box-shadow 0.3s;
 }
 .broadcast-toggle.is-on .toggle-light {
   background: #c44030;
-  box-shadow: 0 0 10px rgba(196, 64, 48, 0.6), 0 0 20px rgba(196, 64, 48, 0.3);
+  box-shadow:
+    0 0 10px rgba(196, 64, 48, 0.6),
+    0 0 20px rgba(196, 64, 48, 0.3);
 }
 .toggle-label {
   font-size: 11px;
@@ -488,29 +539,41 @@ function goProgramDetail(programId) {
   border-radius: 1px;
   background: rgba(40, 28, 18, 0.6);
   border: 1px solid rgba(60, 40, 25, 0.4);
-  transition: background 0.2s, box-shadow 0.2s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
 }
 .eq-dot--lit {
   background: rgba(120, 200, 120, 0.7);
   box-shadow: 0 0 3px rgba(120, 200, 120, 0.3);
 }
-.eq-col:nth-child(n+6) .eq-dot--lit {
+.eq-col:nth-child(n + 6) .eq-dot--lit {
   background: rgba(200, 180, 60, 0.7);
   box-shadow: 0 0 3px rgba(200, 180, 60, 0.3);
 }
-.eq-col:nth-child(n+8) .eq-dot--lit {
+.eq-col:nth-child(n + 8) .eq-dot--lit {
   background: rgba(196, 64, 48, 0.7);
   box-shadow: 0 0 3px rgba(196, 64, 48, 0.3);
 }
 
 /* --- Animations --- */
 @keyframes needle-drift {
-  0% { left: 38%; }
-  100% { left: 52%; }
+  0% {
+    left: 38%;
+  }
+  100% {
+    left: 52%;
+  }
 }
 @keyframes vu-bounce {
-  0% { height: 35%; }
-  50% { height: 72%; }
-  100% { height: 50%; }
+  0% {
+    height: 35%;
+  }
+  50% {
+    height: 72%;
+  }
+  100% {
+    height: 50%;
+  }
 }
 </style>

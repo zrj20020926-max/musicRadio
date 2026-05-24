@@ -78,7 +78,13 @@ export const useRadioStore = defineStore('radio', () => {
   const updateStatus = ref('idle')
   const updateMessage = ref('')
 
-  const isPlaying = ref(false)
+  const playbackStatus = ref('idle')
+  const playbackError = ref('')
+  let loadTimeoutId = null
+  let currentRequestId = 0
+
+  const isPlaying = computed(() => playbackStatus.value === 'playing')
+  const isBuffering = computed(() => playbackStatus.value === 'loading' || playbackStatus.value === 'buffering')
   const currentProgramId = ref(loadString(CURRENT_KEY, programs.value[0]?.id || ''))
   const savedStation = loadString(CURRENT_STATION_KEY, '')
   const currentStationId = ref(savedStation || null)
@@ -275,7 +281,9 @@ export const useRadioStore = defineStore('radio', () => {
     currentProgramId.value = programId
     currentEpisodeIndex.value = Number.isInteger(options.episodeIndex) ? options.episodeIndex : 0
     progress.value = options.resume ? progress.value : 0
-    isPlaying.value = true
+    playbackStatus.value = 'playing'
+    playbackError.value = ''
+    clearTimeout(loadTimeoutId)
     updatePlayHistory(programId)
     queue.value = queue.value.filter((id) => id !== programId)
     loadAudioSource()
@@ -289,13 +297,12 @@ export const useRadioStore = defineStore('radio', () => {
       playProgram(programId)
       return
     }
-    isPlaying.value = !isPlaying.value
-    if (audio && audio.src) {
-      if (isPlaying.value) {
-        audio.play().catch(() => {})
-      } else {
-        audio.pause()
-      }
+    if (isPlaying.value) {
+      playbackStatus.value = 'paused'
+      if (audio && audio.src) audio.pause()
+    } else {
+      playbackStatus.value = 'playing'
+      if (audio && audio.src) audio.play().catch(() => {})
     }
   }
 
@@ -327,7 +334,7 @@ export const useRadioStore = defineStore('radio', () => {
       playProgram(nextId)
       return
     }
-    isPlaying.value = false
+    playbackStatus.value = 'paused'
     progress.value = durationSec.value
     if (audio) audio.pause()
   }
@@ -347,7 +354,7 @@ export const useRadioStore = defineStore('radio', () => {
     currentProgramId.value = previousId
     currentEpisodeIndex.value = 0
     progress.value = 0
-    isPlaying.value = true
+    playbackStatus.value = 'playing'
     updatePlayHistory(previousId)
     loadAudioSource()
     if (audio && audio.src) audio.play().catch(() => {})
@@ -488,33 +495,58 @@ export const useRadioStore = defineStore('radio', () => {
 
   function playStation(station) {
     if (!station?.url) return
+    const requestId = ++currentRequestId
+    clearTimeout(loadTimeoutId)
+    if (audio) { audio.pause(); audio.src = '' }
     currentStationId.value = station.stationuuid || station.name
+    playbackStatus.value = 'loading'
+    playbackError.value = ''
     hasRealSource = true
     if (audio) {
       audio.src = station.url_resolved || station.url
       audio.load()
       audio.play().catch(() => {})
     }
-    isPlaying.value = true
-    pushToast(`正在收听：${station.name}`)
+    loadTimeoutId = setTimeout(() => {
+      if (currentRequestId !== requestId) return
+      if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
+        playbackStatus.value = 'error'
+        playbackError.value = '连接超时'
+        if (audio) { audio.pause(); audio.src = '' }
+      }
+    }, 12000)
+    pushToast(`正在连接：${station.name}`)
   }
 
   function stopStation() {
+    clearTimeout(loadTimeoutId)
     currentStationId.value = null
     hasRealSource = false
     if (audio) {
       audio.pause()
       audio.src = ''
     }
-    isPlaying.value = false
+    playbackStatus.value = 'idle'
+    playbackError.value = ''
+  }
+
+  function retryStation() {
+    if (!currentStationId.value) return
+    const stationObj = stations.value.find(
+      (s) => (s.stationuuid || s.name) === currentStationId.value,
+    )
+    if (stationObj) playStation(stationObj)
   }
 
   function toggleStation() {
     if (!currentStationId.value) return
     if (isPlaying.value) {
       if (audio) audio.pause()
-      isPlaying.value = false
+      playbackStatus.value = 'paused'
     } else {
+      playbackStatus.value = 'loading'
+      playbackError.value = ''
+      const requestId = ++currentRequestId
       if (audio && audio.src) {
         audio.play().catch(() => {})
       } else {
@@ -531,7 +563,15 @@ export const useRadioStore = defineStore('radio', () => {
           }
         }
       }
-      isPlaying.value = true
+      clearTimeout(loadTimeoutId)
+      loadTimeoutId = setTimeout(() => {
+        if (currentRequestId !== requestId) return
+        if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
+          playbackStatus.value = 'error'
+          playbackError.value = '连接超时'
+          if (audio) { audio.pause(); audio.src = '' }
+        }
+      }, 12000)
     }
   }
 
@@ -549,6 +589,34 @@ export const useRadioStore = defineStore('radio', () => {
     })
     audio.addEventListener('error', () => {
       console.warn('[audio] playback error', audio.error)
+      if (currentStationId.value) {
+        clearTimeout(loadTimeoutId)
+        playbackStatus.value = 'error'
+        playbackError.value = '播放出错'
+      }
+    })
+    audio.addEventListener('loadstart', () => {
+      if (currentStationId.value && playbackStatus.value !== 'error') {
+        playbackStatus.value = 'loading'
+      }
+    })
+    audio.addEventListener('waiting', () => {
+      if (currentStationId.value && playbackStatus.value !== 'error') {
+        playbackStatus.value = 'buffering'
+      }
+    })
+    audio.addEventListener('playing', () => {
+      clearTimeout(loadTimeoutId)
+      playbackStatus.value = 'playing'
+      playbackError.value = ''
+    })
+    audio.addEventListener('canplay', () => {
+      clearTimeout(loadTimeoutId)
+    })
+    audio.addEventListener('stalled', () => {
+      if (currentStationId.value && playbackStatus.value === 'loading') {
+        playbackStatus.value = 'buffering'
+      }
     })
 
     if (currentStationId.value) {
@@ -571,7 +639,7 @@ export const useRadioStore = defineStore('radio', () => {
       if (sleepDeadline.value && Date.now() >= sleepDeadline.value) {
         sleepDeadline.value = null
         if (isPlaying.value) {
-          isPlaying.value = false
+          playbackStatus.value = 'paused'
           if (audio) audio.pause()
           pushToast('定时关闭已触发，播放已暂停')
         }
@@ -641,6 +709,9 @@ export const useRadioStore = defineStore('radio', () => {
     updateStatus,
     updateMessage,
     isPlaying,
+    isBuffering,
+    playbackStatus,
+    playbackError,
     currentProgram,
     currentEpisode,
     currentEpisodeIndex,
@@ -689,5 +760,6 @@ export const useRadioStore = defineStore('radio', () => {
     playStation,
     toggleStation,
     stopStation,
+    retryStation,
   }
 })

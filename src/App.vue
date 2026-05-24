@@ -14,6 +14,9 @@ const {
   currentStationId,
   stations,
   isPlaying,
+  isBuffering,
+  playbackStatus,
+  playbackError,
   progress,
   durationSec,
   durationLabel,
@@ -63,6 +66,9 @@ function handleNavigate(key) {
       :program="currentProgram"
       :station="currentStationObj"
       :is-playing="isPlaying"
+      :is-buffering="isBuffering"
+      :playback-status="playbackStatus"
+      :playback-error="playbackError"
       :progress="progress"
       :duration-sec="durationSec"
       :progress-label="progressLabel"
@@ -73,6 +79,7 @@ function handleNavigate(key) {
       @seek="radioStore.setProgress"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"
+      @retry="radioStore.retryStation"
     />
   </div>
 </template>
