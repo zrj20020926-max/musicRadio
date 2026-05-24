@@ -26,7 +26,7 @@ function goProgramDetail(programId) {
   <main class="mt-8 w-full">
     <h2 class="font-retro text-6xl text-paper-900">我的</h2>
 
-    <section class="mt-6 grid grid-cols-[1.4fr_1fr] gap-6 max-[1100px]:grid-cols-1">
+    <section class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr]">
       <article class="retro-card rounded-[1.8rem] p-6">
         <h3 class="font-retro text-5xl text-paper-900">我的订阅</h3>
 
@@ -70,7 +70,7 @@ function goProgramDetail(programId) {
             class="flex items-center justify-between rounded-2xl border border-paper-600/45 bg-paper-100/85 px-4 py-3"
           >
             <div class="min-w-0 flex-1">
-              <p class="truncate font-retro text-3xl text-paper-900">{{ station.name }}</p>
+              <p class="truncate font-retro text-3xl text-paper-900" :title="station.name">{{ station.name }}</p>
               <p class="text-xl text-paper-600">{{ station.country }} · {{ station.codec }}</p>
             </div>
             <button
@@ -131,7 +131,7 @@ function goProgramDetail(programId) {
             class="flex items-center justify-between rounded-2xl border border-paper-600/45 bg-paper-100/85 px-4 py-3"
           >
             <div class="min-w-0 flex-1">
-              <p class="truncate font-retro text-3xl text-paper-900">{{ station.name }}</p>
+              <p class="truncate font-retro text-3xl text-paper-900" :title="station.name">{{ station.name }}</p>
               <p class="text-xl text-paper-600">{{ station.country }} · {{ station.codec }}</p>
             </div>
             <button
@@ -182,6 +182,7 @@ function goProgramDetail(programId) {
               <button
                 type="button"
                 class="w-full truncate rounded-xl border border-paper-600/45 bg-paper-100/80 px-3 py-2 text-left text-xl text-paper-800 hover:bg-paper-100"
+                :title="program.title"
                 @click="radioStore.playProgram(program.id)"
               >
                 {{ program.title }}
@@ -192,7 +193,7 @@ function goProgramDetail(programId) {
 
         <div class="mt-6 rounded-[1.5rem] bg-[#24160f] px-4 py-4 text-paper-50">
           <p class="text-xs tracking-[0.25em] text-paper-300">NOW PLAYING</p>
-          <p class="mt-2 truncate font-retro text-4xl">{{ currentProgram.title }}</p>
+          <p class="mt-2 truncate font-retro text-4xl" :title="currentProgram.title">{{ currentProgram.title }}</p>
           <p class="text-xl text-paper-300">{{ currentProgram.host }}</p>
           <div class="mt-3"><Waveform :animated="isPlaying" /></div>
           <button

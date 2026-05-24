@@ -12,6 +12,7 @@
 body {
   min-height: 100vh;
   color: #2c1b10;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 18% 10%, rgba(252, 226, 176, 0.32), transparent 40%),
     radial-gradient(circle at 80% 78%, rgba(166, 119, 74, 0.2), transparent 50%),
@@ -37,6 +38,27 @@ body::before {
 
 #app {
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.truncate-with-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clamp-2-with-title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 @layer components {
@@ -44,6 +66,18 @@ body::before {
     width: min(1240px, calc(100% - 56px));
     margin-left: auto;
     margin-right: auto;
+  }
+
+  @media (max-width: 900px) {
+    .retro-shell {
+      width: min(1240px, calc(100% - 32px));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .retro-shell {
+      width: calc(100% - 20px);
+    }
   }
 
   .retro-card {

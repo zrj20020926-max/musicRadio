@@ -23,6 +23,7 @@ const emit = defineEmits(['select'])
           <button
             type="button"
             class="text-paper-900 hover:underline"
+            :title="schedule.program.title"
             @click="emit('select', schedule.program.id)"
           >
             {{ schedule.program.title }}

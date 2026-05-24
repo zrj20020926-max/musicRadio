@@ -101,7 +101,7 @@ function handleAddQueue(programId) {
       </button>
     </div>
 
-    <section v-if="filteredItems.length" class="mt-7 grid grid-cols-2 gap-5">
+    <section v-if="filteredItems.length" class="mt-7 grid grid-cols-1 gap-5 2xl:grid-cols-2">
       <article
         v-for="item in filteredItems"
         :key="item.id"
@@ -161,7 +161,7 @@ function handleAddQueue(programId) {
     </section>
 
     <footer
-      class="mt-8 flex items-center justify-between rounded-[1.7rem] bg-[#24160f] px-6 py-4 text-paper-50 shadow-soft"
+      class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[1.7rem] bg-[#24160f] px-4 py-4 text-paper-50 shadow-soft sm:px-6"
     >
       <div class="flex items-center gap-4">
         <div class="grid h-14 w-14 place-content-center rounded-2xl bg-paper-800 text-xl">📻</div>

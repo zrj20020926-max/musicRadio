@@ -32,6 +32,7 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
         <button
           type="button"
           class="mt-2 line-clamp-2 text-left font-retro text-3xl leading-tight text-paper-900 hover:underline"
+          :title="props.program.title"
           @click="emit('detail', props.program.id)"
         >
           {{ props.program.title }}

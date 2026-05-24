@@ -29,8 +29,8 @@ function formatListeners(value) {
   <section
     class="fixed bottom-0 left-0 right-0 z-40 border-t border-paper-700/55 bg-paper-200/95 backdrop-blur"
   >
-    <div class="retro-shell flex items-center gap-5 px-4 py-3">
-      <div class="min-w-0 flex-1">
+    <div class="retro-shell flex flex-wrap items-center gap-3 px-3 py-3 sm:gap-5 sm:px-4">
+      <div class="min-w-0 flex-1 basis-full lg:basis-auto">
         <div class="flex items-center gap-2">
           <span
             class="rounded-full border px-2 py-0.5 text-xs tracking-[0.16em]"
@@ -47,13 +47,21 @@ function formatListeners(value) {
             >{{ props.progressLabel }} / {{ props.durationLabel }}</span
           >
         </div>
-        <p v-if="props.station" class="mt-1 truncate font-retro text-3xl text-paper-900">
+        <p
+          v-if="props.station"
+          class="truncate-with-title mt-1 font-retro text-2xl text-paper-900 sm:text-3xl"
+          :title="props.station.name"
+        >
           {{ props.station.name }}
         </p>
-        <p v-else class="mt-1 truncate font-retro text-3xl text-paper-900">
+        <p
+          v-else
+          class="truncate-with-title mt-1 font-retro text-2xl text-paper-900 sm:text-3xl"
+          :title="`${props.program?.category || ''} · ${props.program?.title || ''}`"
+        >
           {{ props.program?.category }} · {{ props.program?.title }}
         </p>
-        <p class="truncate text-lg text-paper-700">
+        <p class="truncate-with-title text-base text-paper-700 sm:text-lg">
           <Transition
             enter-active-class="transition duration-300 ease-out"
             enter-from-class="opacity-0 translate-y-1"
@@ -121,7 +129,7 @@ function formatListeners(value) {
         </button>
       </div>
 
-      <div v-if="!props.station" class="flex w-[38%] min-w-[300px] items-center gap-2">
+      <div v-if="!props.station" class="flex w-full items-center gap-2 lg:w-[38%] lg:min-w-[300px]">
         <span class="w-12 text-right text-sm text-paper-700">{{ props.progressLabel }}</span>
         <input
           class="h-2 w-full accent-[#6a4329]"

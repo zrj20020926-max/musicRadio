@@ -48,7 +48,7 @@ function displayDuration(episode, index) {
       v-if="hasProgram"
       class="rounded-[2rem] border border-paper-600/60 bg-paper-200/90 p-8 shadow-soft"
     >
-      <div class="grid grid-cols-[0.95fr_1.55fr] gap-8">
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[0.95fr_1.55fr] xl:gap-8">
         <div>
           <article
             :class="`rounded-[2rem] bg-gradient-to-br ${program.cover.tone} p-6 text-paper-100`"
@@ -139,13 +139,14 @@ function displayDuration(episode, index) {
                     "
                   />
                   <span class="text-3xl text-paper-700">{{ episode.pubDate || episode.date }}</span>
-                  <button
-                    type="button"
-                    class="truncate text-left text-4xl font-semibold hover:underline"
-                    @click="radioStore.playProgram(program.id, { episodeIndex: index })"
-                  >
-                    {{ episode.title }}
-                  </button>
+                    <button
+                      type="button"
+                      class="truncate text-left text-4xl font-semibold hover:underline"
+                      :title="episode.title"
+                      @click="radioStore.playProgram(program.id, { episodeIndex: index })"
+                    >
+                      {{ episode.title }}
+                    </button>
                 </div>
                 <span
                   class="text-3xl"

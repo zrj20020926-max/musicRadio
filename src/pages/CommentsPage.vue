@@ -22,7 +22,7 @@ function submitComment() {
 
 <template>
   <main class="mt-8 w-full">
-    <section class="grid grid-cols-[1.75fr_0.95fr] gap-8">
+    <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.75fr_0.95fr] xl:gap-8">
       <article class="rounded-[2rem] border border-paper-600/60 bg-paper-200/90 p-8 shadow-soft">
         <h2 class="font-retro text-6xl text-paper-900">听友留言</h2>
 
@@ -34,7 +34,7 @@ function submitComment() {
           >
             <div class="flex min-w-0 items-center gap-4">
               <span class="h-11 w-11 rounded-full bg-[#6a4329]" />
-              <p class="truncate text-3xl text-paper-900">{{ comment.content }}</p>
+              <p class="truncate text-3xl text-paper-900" :title="comment.content">{{ comment.content }}</p>
             </div>
             <span class="ml-3 text-3xl text-[#7f4327]">♡ {{ comment.liked }}</span>
           </div>

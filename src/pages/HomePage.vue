@@ -24,7 +24,7 @@ function goProgramDetail(programId) {
 </script>
 
 <template>
-  <main class="mt-8 grid w-full grid-cols-[1.1fr_0.9fr] gap-8 max-[1100px]:grid-cols-1">
+  <main class="mt-6 grid w-full grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
     <section>
       <h2 class="font-retro text-7xl leading-[1.1] text-paper-900">复古电台</h2>
       <p class="mt-2 font-retro text-5xl text-paper-900">一段声音。一段陪伴</p>
@@ -38,7 +38,7 @@ function goProgramDetail(programId) {
           @toggle="radioStore.togglePlay()"
         />
       </div>
-      <div class="mt-8 grid grid-cols-2 gap-4">
+      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ProgramCard
           v-for="program in featuredPrograms.slice(0, 2)"
           :key="program.id"

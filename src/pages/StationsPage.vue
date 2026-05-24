@@ -8,7 +8,7 @@ const { stations, currentStationId, isPlaying, currentProgram, todayScheduleProg
 
 <template>
   <main class="mt-8 w-full">
-    <section class="grid grid-cols-2 gap-8">
+    <section class="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8">
       <article class="rounded-[2rem] border border-paper-700/60 bg-[#22130f] p-8 shadow-soft">
         <h2 class="font-retro text-6xl text-paper-50">今日节目单</h2>
 
@@ -17,7 +17,7 @@ const { stations, currentStationId, isPlaying, currentProgram, todayScheduleProg
             v-for="item in todaySchedulePrograms"
             :key="item.time"
             type="button"
-            class="grid w-full grid-cols-[96px_1fr_auto] items-center gap-4 border-b border-paper-600/40 py-4 text-left last:border-b-0"
+            class="grid w-full grid-cols-[72px_1fr] items-center gap-3 border-b border-paper-600/40 py-4 text-left last:border-b-0 sm:grid-cols-[96px_1fr_auto] sm:gap-4"
             :class="item.program.id === currentProgram.id ? 'rounded-xl bg-paper-100/90 px-2' : ''"
             @click="radioStore.playProgram(item.program.id)"
           >
@@ -28,7 +28,7 @@ const { stations, currentStationId, isPlaying, currentProgram, todayScheduleProg
             </div>
             <span
               v-if="item.program.isLive"
-              class="rounded-full border border-red-800 px-3 py-1 text-lg text-red-900"
+              class="col-span-2 mt-2 w-fit rounded-full border border-red-800 px-3 py-1 text-lg text-red-900 sm:col-span-1 sm:mt-0"
               >直播中</span
             >
           </button>
@@ -55,8 +55,13 @@ const { stations, currentStationId, isPlaying, currentProgram, todayScheduleProg
             />
             <div v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-800/20 text-xl text-amber-900">FM</div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-3xl font-medium text-paper-900">{{ station.name }}</p>
-              <p class="truncate text-xl text-paper-700">{{ station.country }} · {{ station.codec }} {{ station.bitrate }}kbps</p>
+              <p class="truncate text-3xl font-medium text-paper-900" :title="station.name">{{ station.name }}</p>
+              <p
+                class="truncate text-xl text-paper-700"
+                :title="`${station.country} · ${station.codec} ${station.bitrate}kbps`"
+              >
+                {{ station.country }} · {{ station.codec }} {{ station.bitrate }}kbps
+              </p>
             </div>
             <span
               class="shrink-0 rounded-full px-3 py-1 text-xl"

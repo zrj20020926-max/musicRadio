@@ -16,7 +16,7 @@ const emit = defineEmits(['toggle'])
     <p class="text-[13px] tracking-[0.28em] text-paper-300">NOW PLAYING</p>
     <div class="mt-3 flex items-center justify-between gap-4">
       <div class="min-w-0">
-        <h3 class="truncate font-retro text-4xl text-paper-50">{{ props.program.title }}</h3>
+        <h3 class="truncate font-retro text-4xl text-paper-50" :title="props.program.title">{{ props.program.title }}</h3>
         <p class="mt-1 text-2xl text-paper-300">
           {{ props.program.host }} · {{ props.program.duration }}
         </p>
