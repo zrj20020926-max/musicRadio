@@ -25,9 +25,7 @@ const activeTag = ref('全部')
 const keyword = ref('')
 
 const tags = computed(() => {
-  const categories = [...new Set(
-    programs.value.map((p) => p.category).filter(Boolean)
-  )]
+  const categories = [...new Set(programs.value.map((p) => p.category).filter(Boolean))]
   return ['全部', ...categories, '收藏']
 })
 
@@ -111,17 +109,29 @@ const isLivePlaying = computed(() => {
           :disabled="updateStatus === 'loading'"
           @click="handleUpdatePrograms"
         >
-          <svg v-if="updateStatus === 'loading'" class="update-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg
+            v-if="updateStatus === 'loading'"
+            class="update-spinner"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
             <circle cx="12" cy="12" r="9" stroke-dasharray="40 20" />
           </svg>
           <span>{{ updateStatus === 'loading' ? '整理中...' : '更新节目' }}</span>
         </button>
-        <p v-if="updateMessage" class="update-msg" :class="{ 'update-msg--ok': updateStatus === 'success', 'update-msg--err': updateStatus === 'error' }">
+        <p
+          v-if="updateMessage"
+          class="update-msg"
+          :class="{
+            'update-msg--ok': updateStatus === 'success',
+            'update-msg--err': updateStatus === 'error',
+          }"
+        >
           {{ updateMessage }}
         </p>
-        <p class="header-meta">
-          {{ programs.length }} 个节目 · {{ lastUpdatedAt || '尚未更新' }}
-        </p>
+        <p class="header-meta">{{ programs.length }} 个节目 · {{ lastUpdatedAt || '尚未更新' }}</p>
       </div>
     </header>
 
@@ -136,7 +146,13 @@ const isLivePlaying = computed(() => {
     <!-- 3. Search & Filter -->
     <div class="filter-section">
       <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          class="search-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.35-4.35" stroke-linecap="round" />
         </svg>
@@ -181,15 +197,46 @@ const isLivePlaying = computed(() => {
     <section v-else class="empty-state">
       <div class="empty-visual">
         <svg viewBox="0 0 80 80" fill="none" class="empty-icon">
-          <rect x="10" y="20" width="60" height="50" rx="3" stroke="currentColor" stroke-width="2" />
+          <rect
+            x="10"
+            y="20"
+            width="60"
+            height="50"
+            rx="3"
+            stroke="currentColor"
+            stroke-width="2"
+          />
           <path d="M10 20 L20 8 H60 L70 20" stroke="currentColor" stroke-width="2" fill="none" />
-          <line x1="28" y1="40" x2="52" y2="40" stroke="currentColor" stroke-width="1.5" opacity="0.4" />
-          <line x1="32" y1="48" x2="48" y2="48" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
+          <line
+            x1="28"
+            y1="40"
+            x2="52"
+            y2="40"
+            stroke="currentColor"
+            stroke-width="1.5"
+            opacity="0.4"
+          />
+          <line
+            x1="32"
+            y1="48"
+            x2="48"
+            y2="48"
+            stroke="currentColor"
+            stroke-width="1.5"
+            opacity="0.3"
+          />
         </svg>
       </div>
       <p class="empty-title">没有找到匹配的节目档案</p>
       <p class="empty-hint">换个关键词试试，或清空筛选查看全部内容</p>
-      <button type="button" class="empty-reset" @click="activeTag = '全部'; keyword = ''">
+      <button
+        type="button"
+        class="empty-reset"
+        @click="
+          activeTag = '全部'
+          keyword = ''
+        "
+      >
         清空筛选
       </button>
     </section>
@@ -198,7 +245,12 @@ const isLivePlaying = computed(() => {
     <div ref="sentinel" class="scroll-sentinel" />
     <div v-if="loadingMore" class="load-more">
       <div class="load-inner">
-        <span v-for="i in 5" :key="i" class="load-bar" :style="{ animationDelay: `${i * 0.12}s` }" />
+        <span
+          v-for="i in 5"
+          :key="i"
+          class="load-bar"
+          :style="{ animationDelay: `${i * 0.12}s` }"
+        />
       </div>
       <p class="load-text">正在整理更多节目档案...</p>
     </div>
@@ -260,7 +312,9 @@ const isLivePlaying = computed(() => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.1s;
+  transition:
+    border-color 0.2s,
+    transform 0.1s;
 }
 .update-btn:hover:not(:disabled) {
   border-color: rgba(212, 160, 80, 0.7);
@@ -281,8 +335,12 @@ const isLivePlaying = computed(() => {
   font-size: 12px;
   color: #704c2b;
 }
-.update-msg--ok { color: #1f6b43; }
-.update-msg--err { color: #8a2c1d; }
+.update-msg--ok {
+  color: #1f6b43;
+}
+.update-msg--err {
+  color: #8a2c1d;
+}
 
 .header-meta {
   font-size: 12px;
@@ -454,11 +512,21 @@ const isLivePlaying = computed(() => {
   background: linear-gradient(to top, #7d4f28, #d8b16d);
   animation: load-wave 0.9s ease-in-out infinite alternate;
 }
-.load-bar:nth-child(1) { height: 8px; }
-.load-bar:nth-child(2) { height: 16px; }
-.load-bar:nth-child(3) { height: 12px; }
-.load-bar:nth-child(4) { height: 20px; }
-.load-bar:nth-child(5) { height: 10px; }
+.load-bar:nth-child(1) {
+  height: 8px;
+}
+.load-bar:nth-child(2) {
+  height: 16px;
+}
+.load-bar:nth-child(3) {
+  height: 12px;
+}
+.load-bar:nth-child(4) {
+  height: 20px;
+}
+.load-bar:nth-child(5) {
+  height: 10px;
+}
 
 .load-text {
   font-size: 13px;
@@ -468,19 +536,33 @@ const isLivePlaying = computed(() => {
 
 /* === Animations === */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes load-wave {
-  0% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-  100% { transform: scaleY(0.6); }
+  0% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0.6);
+  }
 }
 
 @keyframes text-fade {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>
-
