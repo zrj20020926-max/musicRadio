@@ -7,6 +7,7 @@ const props = defineProps({
   progressLabel: { type: String, required: true },
   durationLabel: { type: String, required: true },
   nextTitle: { type: String, default: '暂无下一集' },
+  feedback: { type: String, default: '' },
 })
 
 const emit = defineEmits(['toggle', 'seek', 'next', 'prev'])
@@ -48,8 +49,23 @@ function formatListeners(value) {
           {{ props.program.category }} · {{ props.program.title }}
         </p>
         <p class="truncate text-lg text-paper-700">
-          主播 {{ props.program.host }} · {{ formatListeners(props.program.listeners) }} 人收听 ·
-          下一集：{{ props.nextTitle }}
+          <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="opacity-0 translate-y-1"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 -translate-y-1"
+            mode="out-in"
+          >
+            <span v-if="props.feedback" :key="props.feedback" class="font-medium text-[#7f2e20]">{{
+              props.feedback
+            }}</span>
+            <span v-else key="default"
+              >主播 {{ props.program.host }} · {{ formatListeners(props.program.listeners) }} 人收听
+              · 下一集：{{ props.nextTitle }}</span
+            >
+          </Transition>
         </p>
       </div>
 
@@ -63,10 +79,28 @@ function formatListeners(value) {
         </button>
         <button
           type="button"
-          class="rounded-full bg-[#24160f] px-4 py-1 text-paper-50 hover:bg-[#2f1d14]"
+          class="grid h-11 w-11 place-content-center rounded-full border border-[#3a2419] bg-[#24160f] text-paper-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] transition hover:-translate-y-0.5 hover:bg-[#2f1d14]"
           @click="emit('toggle')"
+          :aria-label="props.isPlaying ? '暂停' : '播放'"
         >
-          {{ props.isPlaying ? '暂停' : '播放' }}
+          <svg
+            v-if="!props.isPlaying"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="h-6 w-6 translate-x-[1px]"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="h-6 w-6"
+          >
+            <path d="M7 5h4v14H7zm6 0h4v14h-4z" />
+          </svg>
         </button>
         <button
           type="button"

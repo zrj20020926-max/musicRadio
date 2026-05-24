@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import TopNav from './components/TopNav.vue'
 import GlobalPlayerBar from './components/GlobalPlayerBar.vue'
-import ToastStack from './components/ToastStack.vue'
 import { useRadioStore } from './stores/radio'
 
 const route = useRoute()
@@ -14,10 +13,11 @@ const {
   currentProgram,
   isPlaying,
   progress,
+  durationSec,
   durationLabel,
   progressLabel,
   nextEpisodeTitle,
-  toasts,
+  feedbackMessage,
 } = storeToRefs(radioStore)
 
 const navItems = [
@@ -56,19 +56,15 @@ function handleNavigate(key) {
       :program="currentProgram"
       :is-playing="isPlaying"
       :progress="progress"
-      :duration-sec="
-        radioStore.currentEpisode
-          ? Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])
-          : Number(durationLabel.split(':')[0]) * 60 + Number(durationLabel.split(':')[1])
-      "
+      :duration-sec="durationSec"
       :progress-label="progressLabel"
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
+      :feedback="feedbackMessage"
       @toggle="radioStore.togglePlay(currentProgram.id)"
       @seek="radioStore.setProgress"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"
     />
-    <ToastStack :toasts="toasts" />
   </div>
 </template>

@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { useRadioStore } from '../stores/radio'
 
 const radioStore = useRadioStore()
-const { currentProgram, todaySchedulePrograms } = storeToRefs(radioStore)
+const { stations, currentStationId, isPlaying, currentProgram, todaySchedulePrograms } = storeToRefs(radioStore)
 </script>
 
 <template>
@@ -36,35 +36,37 @@ const { currentProgram, todaySchedulePrograms } = storeToRefs(radioStore)
       </article>
 
       <article class="rounded-[2rem] border border-paper-700/50 bg-paper-200 p-8 shadow-soft">
-        <h3 class="font-retro text-6xl text-paper-900">电台调频</h3>
+        <h3 class="font-retro text-6xl text-paper-900">在线电台</h3>
 
-        <div class="mt-7 text-center font-retro text-[108px] leading-none text-paper-900">
-          {{ currentProgram.cover.frequency.split(' ')[0] }} <span class="text-6xl">FM</span>
-        </div>
-
-        <div
-          class="relative mx-auto mt-10 h-28 w-[86%] rounded-3xl border border-paper-700/60 bg-[#1f120d] px-8 py-5"
-        >
-          <div class="flex h-full items-center justify-between">
-            <span
-              v-for="n in 13"
-              :key="n"
-              class="h-10 w-[2px] bg-amber-500/70"
-              :style="{ height: `${22 + (n % 3) * 10}px` }"
+        <div v-if="stations.length" class="mt-6 max-h-[420px] space-y-3 overflow-y-auto pr-2">
+          <button
+            v-for="station in stations.slice(0, 20)"
+            :key="station.stationuuid"
+            type="button"
+            class="flex w-full items-center gap-3 rounded-xl border border-paper-700/30 px-4 py-3 text-left transition hover:bg-paper-100"
+            :class="currentStationId === station.stationuuid ? 'bg-paper-100 ring-2 ring-amber-600/40' : ''"
+            @click="currentStationId === station.stationuuid && isPlaying ? radioStore.stopStation() : radioStore.playStation(station)"
+          >
+            <img
+              v-if="station.favicon"
+              :src="station.favicon"
+              class="h-10 w-10 rounded-lg object-cover"
+              alt=""
             />
-          </div>
-          <div class="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-[#a43b2a]" />
+            <div v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-800/20 text-xl text-amber-900">FM</div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-3xl font-medium text-paper-900">{{ station.name }}</p>
+              <p class="truncate text-xl text-paper-700">{{ station.country }} · {{ station.codec }} {{ station.bitrate }}kbps</p>
+            </div>
+            <span
+              class="shrink-0 rounded-full px-3 py-1 text-xl"
+              :class="currentStationId === station.stationuuid && isPlaying ? 'bg-red-800/20 text-red-900' : 'bg-amber-800/20 text-amber-900'"
+            >
+              {{ currentStationId === station.stationuuid && isPlaying ? '停止' : '收听' }}
+            </span>
+          </button>
         </div>
-
-        <button
-          type="button"
-          class="mx-auto mt-7 block h-40 w-40 rounded-full border-4 border-paper-700 bg-[#cfae73] p-8 transition hover:scale-105"
-          @click="radioStore.togglePlay(currentProgram.id)"
-        >
-          <span class="block h-full w-full rounded-full border border-paper-700 bg-paper-100" />
-        </button>
-
-        <p class="mt-7 font-retro text-5xl text-paper-900">FM {{ currentProgram.title }}</p>
+        <p v-else class="mt-6 text-3xl text-paper-700">暂无电台数据，请先点击"更新节目"获取。</p>
       </article>
     </section>
   </main>

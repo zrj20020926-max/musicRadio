@@ -49,7 +49,12 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
         收听
       </button>
       <button
-        class="rounded-full border border-paper-700 px-3 py-2 text-lg text-paper-800 transition hover:bg-paper-200"
+        class="rounded-full border px-3 py-2 text-lg transition-all duration-200 active:scale-95"
+        :class="
+          props.isSubscribed
+            ? 'border-[#7f2e20] bg-[#f5deb4] text-[#7f2e20] shadow-[0_0_0_2px_rgba(127,46,32,0.2)] animate-[pulse_0.45s_ease-in-out]'
+            : 'border-paper-700 text-paper-800 hover:bg-paper-200'
+        "
         @click="emit('subscribe', props.program.id)"
       >
         {{ props.isSubscribed ? '已订阅' : '订阅' }}

@@ -7,26 +7,82 @@ import { useRadioStore } from '../stores/radio'
 
 const router = useRouter()
 const radioStore = useRadioStore()
-const { programs, currentProgram, isPlaying } = storeToRefs(radioStore)
+const { programs, currentProgram, isPlaying, updateStatus, updateMessage, lastUpdatedAt } =
+  storeToRefs(radioStore)
 
 const activeTag = ref('全部节目')
+const keyword = ref('')
 const tags = ['全部节目', '早安', '午后', '深夜', '故事']
 
 const filteredItems = computed(() => {
-  if (activeTag.value === '全部节目') {
-    return programs.value
-  }
-  return programs.value.filter((item) => item.category === activeTag.value)
+  const normalizedKeyword = keyword.value.trim().toLowerCase()
+
+  return programs.value.filter((item) => {
+    const byCategory = activeTag.value === '全部节目' ? true : item.category === activeTag.value
+    if (!byCategory) return false
+
+    if (!normalizedKeyword) return true
+
+    return [item.title, item.host, item.category]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(normalizedKeyword))
+  })
+})
+
+const statusClass = computed(() => {
+  if (updateStatus.value === 'loading') return 'text-paper-700'
+  if (updateStatus.value === 'success') return 'text-[#1f6b43]'
+  if (updateStatus.value === 'error') return 'text-[#8a2c1d]'
+  return 'text-paper-700'
 })
 
 function goProgramDetail(programId) {
   router.push(`/programs/${programId}`)
 }
+
+async function handleUpdatePrograms() {
+  await radioStore.updateExternalContent()
+}
+
+function handlePlayNow(programId) {
+  radioStore.playProgram(programId)
+}
+
+function handleAddQueue(programId) {
+  radioStore.addToQueue(programId)
+}
 </script>
 
 <template>
   <main class="mt-8 w-full pb-8">
-    <h2 class="font-retro text-6xl text-paper-900">节目</h2>
+    <div class="flex items-start justify-between gap-5">
+      <div>
+        <h2 class="font-retro text-6xl text-paper-900">节目</h2>
+        <p class="mt-2 text-xl text-paper-700">
+          上次更新：{{ lastUpdatedAt || '尚未更新（使用本地内容）' }}
+        </p>
+        <p class="text-xl" :class="statusClass">
+          {{ updateMessage || '可手动从公开接口更新节目内容' }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="rounded-full border border-paper-700 bg-paper-100 px-5 py-2 text-2xl text-paper-900 transition hover:bg-paper-200 disabled:cursor-not-allowed disabled:opacity-70"
+        :disabled="updateStatus === 'loading'"
+        @click="handleUpdatePrograms"
+      >
+        {{ updateStatus === 'loading' ? '更新中...' : '更新节目' }}
+      </button>
+    </div>
+
+    <div class="mt-5 rounded-2xl border border-paper-600/60 bg-paper-100/70 px-4 py-3">
+      <input
+        v-model="keyword"
+        type="text"
+        class="w-full bg-transparent text-2xl text-paper-900 outline-none placeholder:text-paper-600"
+        placeholder="搜索标题 / 主播 / 分类"
+      />
+    </div>
 
     <div class="mt-4 flex items-center gap-4">
       <button
@@ -45,7 +101,7 @@ function goProgramDetail(programId) {
       </button>
     </div>
 
-    <section class="mt-7 grid grid-cols-2 gap-5">
+    <section v-if="filteredItems.length" class="mt-7 grid grid-cols-2 gap-5">
       <article
         v-for="item in filteredItems"
         :key="item.id"
@@ -66,16 +122,25 @@ function goProgramDetail(programId) {
               {{ item.title }}
             </button>
             <p class="mt-1 text-2xl text-paper-700">
-              主播: {{ item.host }} · 更新 {{ item.date }} · {{ item.listeners }}
+              主播: {{ item.host }} · 分类 {{ item.category }} · {{ item.listeners }}
             </p>
           </div>
         </div>
-        <div class="flex items-center gap-3">
-          <span
-            v-if="item.isLive"
-            class="rounded-full border border-red-800 px-3 py-1 text-lg text-red-900"
-            >直播中</span
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border border-paper-700 px-3 py-1 text-lg text-paper-800 hover:bg-paper-100"
+            @click="handlePlayNow(item.id)"
           >
+            播放
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-paper-700 px-3 py-1 text-lg text-paper-800 hover:bg-paper-100"
+            @click="handleAddQueue(item.id)"
+          >
+            入队
+          </button>
           <button
             type="button"
             class="text-4xl text-paper-700 transition hover:translate-x-1"
@@ -85,6 +150,14 @@ function goProgramDetail(programId) {
           </button>
         </div>
       </article>
+    </section>
+
+    <section
+      v-else
+      class="mt-8 rounded-[1.7rem] border border-paper-700/45 bg-paper-100/85 p-8 text-center"
+    >
+      <p class="font-retro text-5xl text-paper-900">没有找到匹配的节目</p>
+      <p class="mt-2 text-2xl text-paper-700">换个关键词试试，或清空搜索查看全部内容。</p>
     </section>
 
     <footer

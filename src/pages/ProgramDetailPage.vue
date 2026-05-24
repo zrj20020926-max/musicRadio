@@ -7,11 +7,39 @@ import { useRadioStore } from '../stores/radio'
 
 const route = useRoute()
 const radioStore = useRadioStore()
-const { subscribed, isPlaying } = storeToRefs(radioStore)
+const { subscribed, isPlaying, durationLabel, currentEpisodeIndex } = storeToRefs(radioStore)
 
 const program = computed(() => radioStore.getProgramById(route.params.id))
 const hasProgram = computed(() => Boolean(program.value))
 const episodeList = computed(() => program.value?.episodes || [])
+const isCurrentProgram = computed(
+  () => program.value && radioStore.currentProgram?.id === program.value.id,
+)
+
+function formatEpisodeDuration(duration) {
+  if (!duration || duration === '直播中') {
+    return '00:00'
+  }
+  const text = String(duration).trim()
+  if (/^\d{1,2}:\d{2}$/.test(text)) {
+    const [m, s] = text.split(':')
+    return `${String(Number.parseInt(m, 10)).padStart(2, '0')}:${String(Number.parseInt(s, 10)).padStart(2, '0')}`
+  }
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(text)) {
+    const [h, m, s] = text.split(':').map((item) => Number.parseInt(item, 10))
+    const minute = h * 60 + m
+    return `${String(minute).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+  return '00:00'
+}
+
+function displayDuration(episode, index) {
+  if (isCurrentProgram.value && index === currentEpisodeIndex.value) {
+    return durationLabel.value
+  }
+  if (!episode.duration || episode.duration === '直播中') return episode.duration || '--:--'
+  return formatEpisodeDuration(episode.duration) || '--:--'
+}
 </script>
 
 <template>
@@ -68,7 +96,12 @@ const episodeList = computed(() => program.value?.episodes || [])
 
           <button
             type="button"
-            class="mt-5 rounded-full bg-[#c8a663] px-6 py-2 text-3xl font-semibold text-paper-900"
+            class="mt-5 rounded-full px-6 py-2 text-3xl font-semibold text-paper-900 transition-all duration-200 active:scale-95"
+            :class="
+              subscribed.has(program.id)
+                ? 'bg-[#e1bf7d] shadow-[0_0_0_3px_rgba(127,46,32,0.22)] animate-[pulse_0.45s_ease-in-out]'
+                : 'bg-[#c8a663] hover:-translate-y-0.5'
+            "
             @click="radioStore.toggleSubscribe(program.id)"
           >
             {{ subscribed.has(program.id) ? '已订阅' : '订阅' }}
@@ -89,7 +122,7 @@ const episodeList = computed(() => program.value?.episodes || [])
                 :key="episode.id"
                 class="flex items-center justify-between rounded-xl px-3 py-2 text-paper-900"
                 :class="
-                  index === radioStore.currentEpisodeIndex
+                  isCurrentProgram && index === currentEpisodeIndex
                     ? 'border border-paper-700/40 bg-paper-100/85'
                     : ''
                 "
@@ -100,19 +133,16 @@ const episodeList = computed(() => program.value?.episodes || [])
                     :class="
                       episode.duration === '直播中'
                         ? 'bg-[#a43b2a]'
-                        : index === radioStore.currentEpisodeIndex
+                        : isCurrentProgram && index === currentEpisodeIndex
                           ? 'bg-[#7f2e20]'
                           : 'bg-[#beaa84]'
                     "
                   />
-                  <span class="text-3xl text-paper-700">{{ episode.date }}</span>
+                  <span class="text-3xl text-paper-700">{{ episode.pubDate || episode.date }}</span>
                   <button
                     type="button"
                     class="truncate text-left text-4xl font-semibold hover:underline"
-                    @click="
-                      radioStore.playProgram(program.id)
-                      radioStore.currentEpisodeIndex = index
-                    "
+                    @click="radioStore.playProgram(program.id, { episodeIndex: index })"
                   >
                     {{ episode.title }}
                   </button>
@@ -120,7 +150,7 @@ const episodeList = computed(() => program.value?.episodes || [])
                 <span
                   class="text-3xl"
                   :class="episode.duration === '直播中' ? 'text-[#a43b2a]' : 'text-paper-700'"
-                  >{{ episode.duration }}</span
+                  >{{ displayDuration(episode, index) }}</span
                 >
               </li>
             </ul>
