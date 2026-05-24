@@ -34,7 +34,12 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
       <span v-if="props.program.isLive" class="card-onair">LIVE</span>
       <!-- Active waveform bars -->
       <div v-if="isActive" class="card-wave">
-        <span v-for="i in 4" :key="i" class="wave-bar" :style="{ animationDelay: `${i * 0.12}s` }" />
+        <span
+          v-for="i in 4"
+          :key="i"
+          class="wave-bar"
+          :style="{ animationDelay: `${i * 0.12}s` }"
+        />
       </div>
     </div>
 
@@ -42,7 +47,9 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
     <div class="card-body">
       <!-- Tag + Date row -->
       <div class="card-tag-row">
-        <span class="card-category" :title="props.program.category">{{ props.program.category }}</span>
+        <span class="card-category" :title="props.program.category">{{
+          props.program.category
+        }}</span>
         <span v-if="props.program.date" class="card-date">{{ props.program.date }}</span>
       </div>
 
@@ -71,7 +78,9 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
       <!-- Actions -->
       <div class="card-actions">
         <button type="button" class="action-play" @click="emit('play', props.program.id)">
-          <svg viewBox="0 0 16 16" fill="currentColor" class="action-icon"><path d="M4 2l10 6-10 6z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor" class="action-icon">
+            <path d="M4 2l10 6-10 6z" />
+          </svg>
           <span>播放</span>
         </button>
         <button type="button" class="action-detail" @click="emit('detail', props.program.id)">
@@ -107,7 +116,10 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
   border: 1px solid rgba(110, 74, 43, 0.3);
   background: rgba(244, 234, 216, 0.9);
   overflow: hidden;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .archive-card:hover {
   transform: translateY(-2px);
@@ -116,7 +128,9 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
 }
 .archive-card--active {
   border-color: rgba(180, 130, 70, 0.6);
-  box-shadow: 0 0 0 2px rgba(180, 130, 70, 0.15), 0 6px 20px rgba(60, 40, 20, 0.1);
+  box-shadow:
+    0 0 0 2px rgba(180, 130, 70, 0.15),
+    0 6px 20px rgba(60, 40, 20, 0.1);
 }
 
 /* --- Cover --- */
@@ -186,10 +200,18 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
   background: rgba(212, 160, 80, 0.85);
   animation: wave-bounce 0.7s ease-in-out infinite alternate;
 }
-.wave-bar:nth-child(1) { height: 6px; }
-.wave-bar:nth-child(2) { height: 12px; }
-.wave-bar:nth-child(3) { height: 8px; }
-.wave-bar:nth-child(4) { height: 14px; }
+.wave-bar:nth-child(1) {
+  height: 6px;
+}
+.wave-bar:nth-child(2) {
+  height: 12px;
+}
+.wave-bar:nth-child(3) {
+  height: 8px;
+}
+.wave-bar:nth-child(4) {
+  height: 14px;
+}
 
 /* --- Body --- */
 .card-body {
@@ -360,8 +382,14 @@ const emit = defineEmits(['play', 'subscribe', 'favorite', 'detail'])
 
 /* --- Animations --- */
 @keyframes wave-bounce {
-  0% { height: 4px; }
-  50% { height: 14px; }
-  100% { height: 8px; }
+  0% {
+    height: 4px;
+  }
+  50% {
+    height: 14px;
+  }
+  100% {
+    height: 8px;
+  }
 }
 </style>
