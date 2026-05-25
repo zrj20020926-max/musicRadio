@@ -69,7 +69,9 @@ function handleNavigate(key) {
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
       :feedback="feedbackMessage"
-      @toggle="currentStationId ? radioStore.toggleStation() : radioStore.togglePlay(currentProgram?.id)"
+      @toggle="
+        currentStationId ? radioStore.toggleStation() : radioStore.togglePlay(currentProgram?.id)
+      "
       @seek="radioStore.setProgress"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"

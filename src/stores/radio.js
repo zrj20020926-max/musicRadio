@@ -1,7 +1,11 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import Hls from 'hls.js'
-import { fetchProgramsFromExternal, fetchRadioBrowserStations, mergeProgramsKeepUnique } from '../services/externalContent'
+import {
+  fetchProgramsFromExternal,
+  fetchRadioBrowserStations,
+  mergeProgramsKeepUnique,
+} from '../services/externalContent'
 import {
   hasProgramsContent,
   loadLastUpdatedAt,
@@ -97,7 +101,9 @@ export const useRadioStore = defineStore('radio', () => {
   let currentRequestId = 0
 
   const isPlaying = computed(() => playbackStatus.value === 'playing')
-  const isBuffering = computed(() => playbackStatus.value === 'loading' || playbackStatus.value === 'buffering')
+  const isBuffering = computed(
+    () => playbackStatus.value === 'loading' || playbackStatus.value === 'buffering',
+  )
   const currentProgramId = ref(loadString(CURRENT_KEY, programs.value[0]?.id || ''))
   const savedStation = loadString(CURRENT_STATION_KEY, '')
   const currentStationId = ref(savedStation || null)
@@ -189,7 +195,9 @@ export const useRadioStore = defineStore('radio', () => {
 
   const featuredPrograms = computed(() => programs.value.slice(0, 3))
 
-  const liveProgram = computed(() => programs.value.find((item) => item.isLive) ?? programs.value[0] ?? null)
+  const liveProgram = computed(
+    () => programs.value.find((item) => item.isLive) ?? programs.value[0] ?? null,
+  )
 
   const todaySchedulePrograms = computed(() => {
     if (!programs.value.length) {
@@ -271,7 +279,9 @@ export const useRadioStore = defineStore('radio', () => {
     feedbackMessage.value = message
     playStrum()
     clearTimeout(feedbackTimer)
-    feedbackTimer = setTimeout(() => { feedbackMessage.value = '' }, 2200)
+    feedbackTimer = setTimeout(() => {
+      feedbackMessage.value = ''
+    }, 2200)
   }
 
   function updatePlayHistory(programId) {
@@ -554,7 +564,10 @@ export const useRadioStore = defineStore('radio', () => {
     const requestId = ++currentRequestId
     clearTimeout(loadTimeoutId)
     destroyHls()
-    if (audio) { audio.pause(); audio.src = '' }
+    if (audio) {
+      audio.pause()
+      audio.src = ''
+    }
     const id = station.stationuuid || station.name
     currentStationId.value = id
     currentStationObj.value = station
@@ -595,7 +608,10 @@ export const useRadioStore = defineStore('radio', () => {
         playbackStatus.value = 'error'
         playbackError.value = '连接超时'
         destroyHls()
-        if (audio) { audio.pause(); audio.src = '' }
+        if (audio) {
+          audio.pause()
+          audio.src = ''
+        }
       }
     }, 15000)
     pushToast(`正在连接：${station.name}`)
@@ -654,7 +670,10 @@ export const useRadioStore = defineStore('radio', () => {
         if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
           playbackStatus.value = 'error'
           playbackError.value = '连接超时'
-          if (audio) { audio.pause(); audio.src = '' }
+          if (audio) {
+            audio.pause()
+            audio.src = ''
+          }
         }
       }, 12000)
     }
@@ -705,9 +724,9 @@ export const useRadioStore = defineStore('radio', () => {
     })
 
     if (currentStationId.value) {
-      const savedStationObj = stations.value.find(
-        (s) => (s.stationuuid || s.name) === currentStationId.value,
-      ) || stationCache.value.get(currentStationId.value)
+      const savedStationObj =
+        stations.value.find((s) => (s.stationuuid || s.name) === currentStationId.value) ||
+        stationCache.value.get(currentStationId.value)
       if (savedStationObj) {
         currentStationObj.value = savedStationObj
         const url = savedStationObj.url_resolved || savedStationObj.url
@@ -786,22 +805,26 @@ export const useRadioStore = defineStore('radio', () => {
   )
   watch(
     favoriteStations,
-    (value) => window.localStorage.setItem(FAVORITE_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    (value) =>
+      window.localStorage.setItem(FAVORITE_STATIONS_KEY, JSON.stringify(Array.from(value))),
     { deep: true },
   )
   watch(
     favoriteFmStations,
-    (value) => window.localStorage.setItem(FAVORITE_FM_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    (value) =>
+      window.localStorage.setItem(FAVORITE_FM_STATIONS_KEY, JSON.stringify(Array.from(value))),
     { deep: true },
   )
   watch(
     subscribedStations,
-    (value) => window.localStorage.setItem(SUBSCRIBED_STATIONS_KEY, JSON.stringify(Array.from(value))),
+    (value) =>
+      window.localStorage.setItem(SUBSCRIBED_STATIONS_KEY, JSON.stringify(Array.from(value))),
     { deep: true },
   )
   watch(
     stationCache,
-    (value) => window.localStorage.setItem(STATION_CACHE_KEY, JSON.stringify(Array.from(value.values()))),
+    (value) =>
+      window.localStorage.setItem(STATION_CACHE_KEY, JSON.stringify(Array.from(value.values()))),
     { deep: true },
   )
   watch(currentProgramId, (value) => window.localStorage.setItem(CURRENT_KEY, value))
