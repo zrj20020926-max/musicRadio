@@ -12,7 +12,7 @@ const radioStore = useRadioStore()
 const {
   currentProgram,
   currentStationId,
-  stations,
+  currentStationObj,
   isPlaying,
   isBuffering,
   playbackStatus,
@@ -24,11 +24,6 @@ const {
   nextEpisodeTitle,
   feedbackMessage,
 } = storeToRefs(radioStore)
-
-const currentStationObj = computed(() => {
-  if (!currentStationId.value) return null
-  return stations.value.find((s) => (s.stationuuid || s.name) === currentStationId.value) || null
-})
 
 const navItems = [
   { key: 'home', label: '首页', path: '/' },

@@ -95,6 +95,9 @@ function handleSeek(event) {
           <span v-else-if="playbackStatus === 'error'" class="meta-error">
             {{ props.playbackError || '连接失败' }}
           </span>
+          <span v-else-if="playbackStatus === 'paused' && props.station" class="meta-resume" @click="emit('toggle')">
+            点击播放继续收听
+          </span>
           <span v-else-if="props.feedback" class="meta-feedback">
             {{ props.feedback }}
           </span>
@@ -488,6 +491,19 @@ function handleSeek(event) {
 .meta-error {
   font-weight: 500;
   color: rgba(196, 64, 48, 0.9);
+}
+.meta-resume {
+  color: rgba(200, 160, 64, 0.9);
+  cursor: pointer;
+  animation: resume-pulse 2s ease-in-out infinite;
+}
+.meta-resume:hover {
+  color: rgba(232, 180, 64, 1);
+  text-decoration: underline;
+}
+@keyframes resume-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 .meta-feedback {
   font-weight: 500;

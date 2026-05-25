@@ -11,6 +11,7 @@ const {
   favoritePrograms,
   subscribedStationList,
   favoriteStationList,
+  favoriteFmStationList,
   recentPrograms,
   currentProgram,
   isPlaying,
@@ -147,6 +148,34 @@ function goProgramDetail(programId) {
             class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
           >
             暂无收藏电台
+          </li>
+        </ul>
+
+        <!-- FM调频收藏 -->
+        <p class="mt-4 text-xl font-medium text-paper-700">FM调频</p>
+        <ul class="mt-2 space-y-3">
+          <li
+            v-for="station in favoriteFmStationList"
+            :key="station.stationuuid"
+            class="flex items-center justify-between rounded-2xl border border-paper-600/45 bg-paper-100/85 px-4 py-3"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-retro text-3xl text-paper-900" :title="station.name">{{ station.name }}</p>
+              <p class="text-xl text-paper-600">{{ station.country }} · {{ (station.codec || '').toUpperCase() }} {{ station.bitrate }}kbps</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-paper-700 px-4 py-1 text-xl text-paper-800 hover:bg-paper-200"
+              @click="radioStore.playStation(station)"
+            >
+              播放
+            </button>
+          </li>
+          <li
+            v-if="!favoriteFmStationList.length"
+            class="rounded-2xl border border-paper-600/40 bg-paper-100/80 px-4 py-3 text-2xl text-paper-700"
+          >
+            暂无收藏FM电台
           </li>
         </ul>
       </article>

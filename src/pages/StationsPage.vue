@@ -14,7 +14,7 @@ import SpectrumMeter from '../components/SpectrumMeter.vue'
 import PresetButtons from '../components/PresetButtons.vue'
 
 const radioStore = useRadioStore()
-const { playbackStatus, favoriteStations } = storeToRefs(radioStore)
+const { playbackStatus, favoriteFmStations, currentStationId } = storeToRefs(radioStore)
 
 const {
   currentFrequency,
@@ -25,7 +25,7 @@ const {
   stationsWithFreq,
   nudgeFrequency,
   tuneToStation,
-  autoScan,
+  setFrequency,
   setStations,
 } = useFrequencyDial()
 
@@ -33,6 +33,8 @@ const loading = ref(false)
 const lockFlash = ref(false)
 const lastUpdate = ref(null)
 const stationCount = ref(0)
+const showFreqInput = ref(false)
+const freqInputValue = ref('')
 
 const isPlaying = computed(() => playbackStatus.value === 'playing')
 const isBuffering = computed(
@@ -67,7 +69,7 @@ const presetStations = computed(() => stationsWithFreq.value.slice(0, 10))
 
 const isFavorited = computed(() => {
   if (!lockedStation.value) return false
-  return favoriteStations.value.has(lockedStation.value.stationuuid)
+  return favoriteFmStations.value.has(lockedStation.value.stationuuid)
 })
 
 const currentIndex = computed(() => {
@@ -103,7 +105,11 @@ const screenLine2 = computed(() => {
 watch(lockedStation, (station, prev) => {
   if (station && (!prev || prev.stationuuid !== station.stationuuid)) {
     saveCurrentStation(station)
-    radioStore.playStation(station)
+    const alreadyActive =
+      currentStationId.value === (station.stationuuid || station.name)
+    if (!alreadyActive) {
+      radioStore.playStation(station)
+    }
     lockFlash.value = true
     setTimeout(() => {
       lockFlash.value = false
@@ -139,17 +145,30 @@ function nextStation() {
   tuneToStation(stationsWithFreq.value[currentIndex.value + 1])
 }
 
-function onAutoScan() {
-  autoScan(1)
-}
-
 function toggleFav() {
   if (!lockedStation.value) return
-  radioStore.toggleFavoriteStation(lockedStation.value.stationuuid)
+  radioStore.toggleFavoriteFmStation(lockedStation.value.stationuuid)
 }
 
 function onPresetSelect(station) {
   tuneToStation(station)
+}
+
+function openFreqInput() {
+  freqInputValue.value = currentFrequency.value.toFixed(1)
+  showFreqInput.value = true
+}
+
+function confirmFreqInput() {
+  const val = parseFloat(freqInputValue.value)
+  if (!isNaN(val) && val >= 87.0 && val <= 108.0) {
+    setFrequency(val)
+  }
+  showFreqInput.value = false
+}
+
+function cancelFreqInput() {
+  showFreqInput.value = false
 }
 
 async function refreshStations() {
@@ -174,6 +193,14 @@ onMounted(async () => {
     lastUpdate.value = '缓存'
   } else {
     await refreshStations()
+  }
+  if (currentStationId.value && stationsWithFreq.value.length) {
+    const saved = stationsWithFreq.value.find(
+      (s) => s.stationuuid === currentStationId.value
+    )
+    if (saved) {
+      tuneToStation(saved)
+    }
   }
 })
 </script>
@@ -221,13 +248,17 @@ onMounted(async () => {
         <div class="radio-interior">
           <!-- LEFT: Speaker -->
           <div class="speaker-section">
-            <div class="speaker-grille">
+            <div class="speaker-grille" :class="{ 'speaker-grille--active': isPlaying }">
               <div class="speaker-pattern"></div>
+              <div class="speaker-cone">
+                <div class="cone-ring cone-ring--1" :class="{ 'cone-ring--active': isPlaying }"></div>
+                <div class="cone-ring cone-ring--2" :class="{ 'cone-ring--active': isPlaying }"></div>
+                <div class="cone-ring cone-ring--3" :class="{ 'cone-ring--active': isPlaying }"></div>
+                <div class="cone-center" :class="{ 'cone-center--active': isPlaying }"></div>
+              </div>
               <div class="speaker-wave" :class="{ 'speaker-wave--active': isPlaying }"></div>
-              <div
-                class="speaker-wave speaker-wave--2"
-                :class="{ 'speaker-wave--active': isPlaying }"
-              ></div>
+              <div class="speaker-wave speaker-wave--2" :class="{ 'speaker-wave--active': isPlaying }"></div>
+              <div class="speaker-wave speaker-wave--3" :class="{ 'speaker-wave--active': isPlaying }"></div>
             </div>
             <div class="vu-section">
               <SpectrumMeter :mode="spectrumMode" />
@@ -326,8 +357,8 @@ onMounted(async () => {
               <button
                 class="transport-btn"
                 :class="{ 'transport-btn--scanning': isScanning }"
-                @click="onAutoScan"
-                title="自动搜台"
+                @click="openFreqInput"
+                title="手动输入频率"
               >
                 <svg
                   width="14"
@@ -337,8 +368,7 @@ onMounted(async () => {
                   stroke="currentColor"
                   stroke-width="2"
                 >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="M21 21l-4.35-4.35" />
+                  <path d="M4 7h16M4 12h10M4 17h6" />
                 </svg>
               </button>
               <button
@@ -389,6 +419,34 @@ onMounted(async () => {
       <div class="no-signal-text">未接收到电台信号</div>
       <button class="no-signal-btn" @click="refreshStations">重新搜索</button>
     </div>
+
+    <!-- Frequency Input Modal -->
+    <Teleport to="body">
+      <div class="freq-modal-overlay" v-if="showFreqInput" @click.self="cancelFreqInput">
+        <div class="freq-modal">
+          <div class="freq-modal-title">手动调频</div>
+          <div class="freq-modal-body">
+            <span class="freq-modal-prefix">FM</span>
+            <input
+              class="freq-modal-input"
+              type="number"
+              min="87.0"
+              max="108.0"
+              step="0.1"
+              v-model="freqInputValue"
+              @keyup.enter="confirmFreqInput"
+              autofocus
+            />
+            <span class="freq-modal-suffix">MHz</span>
+          </div>
+          <div class="freq-modal-hint">范围 87.0 ~ 108.0</div>
+          <div class="freq-modal-actions">
+            <button class="freq-modal-btn freq-modal-btn--cancel" @click="cancelFreqInput">取消</button>
+            <button class="freq-modal-btn freq-modal-btn--confirm" @click="confirmFreqInput">确认调频</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -625,20 +683,81 @@ onMounted(async () => {
   position: absolute;
   inset: 0;
   background:
+    radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.15) 70%),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 3px,
-      rgba(180, 140, 80, 0.08) 3px,
-      rgba(180, 140, 80, 0.08) 4px
+      rgba(180, 140, 80, 0.12) 3px,
+      rgba(180, 140, 80, 0.12) 4px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 3px,
-      rgba(180, 140, 80, 0.06) 3px,
-      rgba(180, 140, 80, 0.06) 4px
+      rgba(180, 140, 80, 0.08) 3px,
+      rgba(180, 140, 80, 0.08) 4px
     );
+}
+
+.speaker-grille--active {
+  animation: grille-vibrate 0.15s linear infinite;
+}
+
+/* Speaker cone (center) */
+.speaker-cone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  margin: -50px 0 0 -50px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cone-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(180, 140, 80, 0.15);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.cone-ring--1 {
+  inset: 0;
+}
+.cone-ring--2 {
+  inset: 15%;
+}
+.cone-ring--3 {
+  inset: 30%;
+}
+.cone-ring--active.cone-ring--1 {
+  border-color: rgba(200, 160, 64, 0.3);
+  box-shadow: 0 0 8px rgba(200, 160, 64, 0.1);
+  animation: cone-pulse-1 0.8s ease-in-out infinite alternate;
+}
+.cone-ring--active.cone-ring--2 {
+  border-color: rgba(200, 160, 64, 0.4);
+  animation: cone-pulse-2 0.6s ease-in-out infinite alternate;
+}
+.cone-ring--active.cone-ring--3 {
+  border-color: rgba(200, 160, 64, 0.5);
+  animation: cone-pulse-3 0.5s ease-in-out infinite alternate;
+}
+.cone-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(80, 60, 30, 0.9), rgba(40, 30, 15, 0.95));
+  border: 1px solid rgba(140, 100, 50, 0.3);
+  transition: box-shadow 0.3s, transform 0.2s;
+}
+.cone-center--active {
+  box-shadow: 0 0 12px rgba(200, 160, 64, 0.4), 0 0 24px rgba(200, 160, 64, 0.15);
+  animation: cone-center-beat 0.4s ease-in-out infinite alternate;
 }
 
 .speaker-wave {
@@ -649,7 +768,7 @@ onMounted(async () => {
   height: 60px;
   margin: -30px 0 0 -30px;
   border-radius: 50%;
-  border: 1px solid rgba(200, 160, 64, 0.1);
+  border: 2px solid rgba(200, 160, 64, 0.2);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s;
@@ -657,22 +776,54 @@ onMounted(async () => {
 
 .speaker-wave--active {
   opacity: 1;
-  animation: wave-expand 2s ease-out infinite;
+  animation: wave-expand 1.8s ease-out infinite;
 }
 
 .speaker-wave--2.speaker-wave--active {
-  animation-delay: 1s;
+  animation-delay: 0.6s;
+}
+
+.speaker-wave--3.speaker-wave--active {
+  animation-delay: 1.2s;
+  border-color: rgba(200, 160, 64, 0.15);
 }
 
 @keyframes wave-expand {
   0% {
-    transform: scale(0.5);
-    opacity: 0.6;
+    transform: scale(0.4);
+    opacity: 0.8;
+    border-width: 2px;
   }
   100% {
-    transform: scale(3);
+    transform: scale(3.5);
     opacity: 0;
+    border-width: 0.5px;
   }
+}
+
+@keyframes grille-vibrate {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(0.3px, -0.2px); }
+  50% { transform: translate(-0.2px, 0.3px); }
+  75% { transform: translate(0.2px, 0.2px); }
+  100% { transform: translate(-0.3px, -0.1px); }
+}
+
+@keyframes cone-pulse-1 {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(1.03); opacity: 1; }
+}
+@keyframes cone-pulse-2 {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(1.05); opacity: 1; }
+}
+@keyframes cone-pulse-3 {
+  from { transform: scale(0.97); opacity: 0.5; }
+  to { transform: scale(1.06); opacity: 1; }
+}
+@keyframes cone-center-beat {
+  from { transform: scale(1); box-shadow: 0 0 8px rgba(200, 160, 64, 0.3); }
+  to { transform: scale(1.1); box-shadow: 0 0 16px rgba(200, 160, 64, 0.6), 0 0 30px rgba(200, 160, 64, 0.2); }
 }
 
 .vu-section {
@@ -1067,5 +1218,122 @@ onMounted(async () => {
     gap: 32px;
     justify-content: center;
   }
+}
+
+/* --- Frequency Input Modal --- */
+.freq-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.freq-modal {
+  background:
+    linear-gradient(180deg, #4a3520 0%, #3b2814 40%, #2e1f0d 100%);
+  border: 2px solid #8b6838;
+  border-radius: 12px;
+  padding: 28px 32px;
+  min-width: 300px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 220, 160, 0.08);
+}
+
+.freq-modal-title {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  color: #c8a040;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.freq-modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.freq-modal-prefix,
+.freq-modal-suffix {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #8b7355;
+}
+
+.freq-modal-input {
+  width: 120px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #5a3d25;
+  background: #1a0f00;
+  color: #e8a030;
+  font-family: 'Courier New', monospace;
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-align: center;
+  outline: none;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.freq-modal-input::-webkit-outer-spin-button,
+.freq-modal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.freq-modal-input:focus {
+  border-color: #c8a040;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 8px rgba(200, 160, 64, 0.2);
+}
+
+.freq-modal-hint {
+  font-size: 0.68rem;
+  color: #6a4a2a;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.freq-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.freq-modal-btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.freq-modal-btn--cancel {
+  background: transparent;
+  border: 1px solid #5a3d25;
+  color: #8b7355;
+}
+.freq-modal-btn--cancel:hover {
+  border-color: #8b6838;
+  color: #c8a040;
+}
+
+.freq-modal-btn--confirm {
+  background: #5a3d25;
+  border: 1px solid #8b6838;
+  color: #e8a030;
+}
+.freq-modal-btn--confirm:hover {
+  background: #6a4a2a;
+  box-shadow: 0 0 10px rgba(200, 160, 64, 0.15);
 }
 </style>
