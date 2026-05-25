@@ -31,7 +31,6 @@ const navItems = [
   { key: 'programs', label: '节目', path: '/programs' },
   { key: 'live', label: '直播', path: '/live' },
   { key: 'stations', label: '电台', path: '/stations' },
-  { key: 'comments', label: '留言', path: '/comments' },
   { key: 'profile', label: '我的', path: '/profile' },
 ]
 

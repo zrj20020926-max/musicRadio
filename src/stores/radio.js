@@ -33,7 +33,6 @@ function isHlsUrl(url) {
 
 const FAVORITES_KEY = 'retro-radio-favorites'
 const SUBSCRIBED_KEY = 'retro-radio-subscribed'
-const COMMENTS_KEY = 'retro-radio-comments'
 const CURRENT_KEY = 'retro-radio-current-program'
 const CURRENT_STATION_KEY = 'retro-radio-current-station'
 const PLAY_HISTORY_KEY = 'retro-radio-play-history'
@@ -118,7 +117,6 @@ export const useRadioStore = defineStore('radio', () => {
       favoriteStations.value.delete(id)
     }
   }
-  const comments = ref(loadArray(COMMENTS_KEY, []))
   const playHistory = ref(loadArray(PLAY_HISTORY_KEY))
   const queue = ref(
     loadArray(QUEUE_KEY).filter((id) => programs.value.some((item) => item.id === id)),
@@ -485,11 +483,6 @@ export const useRadioStore = defineStore('radio', () => {
     }
   }
 
-  function addComment(content) {
-    comments.value.unshift({ id: Date.now(), user: '你', content, liked: 0 })
-    pushToast('留言发送成功')
-  }
-
   function getProgramById(programId) {
     return programMap.value.get(programId)
   }
@@ -811,9 +804,6 @@ export const useRadioStore = defineStore('radio', () => {
     (value) => window.localStorage.setItem(STATION_CACHE_KEY, JSON.stringify(Array.from(value.values()))),
     { deep: true },
   )
-  watch(comments, (value) => window.localStorage.setItem(COMMENTS_KEY, JSON.stringify(value)), {
-    deep: true,
-  })
   watch(currentProgramId, (value) => window.localStorage.setItem(CURRENT_KEY, value))
   watch(currentStationId, (value) => {
     if (value) {
@@ -864,7 +854,6 @@ export const useRadioStore = defineStore('radio', () => {
     recentPrograms,
     favorites,
     subscribed,
-    comments,
     stats,
     queue,
     feedbackMessage,
@@ -889,7 +878,6 @@ export const useRadioStore = defineStore('radio', () => {
     toggleFavoriteFmStation,
     toggleSubscribeStation,
     refreshStations,
-    addComment,
     getProgramById,
     updateExternalContent,
     loadMorePrograms,
