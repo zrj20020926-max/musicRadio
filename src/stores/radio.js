@@ -272,7 +272,9 @@ export const useRadioStore = defineStore('radio', () => {
         osc.start(strumCtx.currentTime + i * 0.04)
         osc.stop(strumCtx.currentTime + i * 0.04 + 0.55)
       })
-    } catch {}
+    } catch (error) {
+      console.error('Error playing strum:', error)
+    }
   }
 
   function pushToast(message) {
@@ -300,6 +302,8 @@ export const useRadioStore = defineStore('radio', () => {
   function loadAudioSource() {
     if (!audio) return
     currentStationId.value = null
+    currentStationObj.value = null
+    destroyHls()
     audioDuration.value = 0
     const episode = currentEpisode.value
     const url = episode?.audioUrl || ''
@@ -334,7 +338,11 @@ export const useRadioStore = defineStore('radio', () => {
   }
 
   function togglePlay(programId) {
-    if (programId && programMap.value.has(programId) && currentProgramId.value !== programId) {
+    if (
+      programId &&
+      programMap.value.has(programId) &&
+      (currentProgramId.value !== programId || currentStationId.value)
+    ) {
       playProgram(programId)
       return
     }

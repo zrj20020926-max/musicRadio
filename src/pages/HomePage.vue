@@ -43,6 +43,7 @@ function goProgramDetail(programId) {
           v-for="program in featuredPrograms.slice(0, 2)"
           :key="program.id"
           :program="program"
+          :is-active="currentProgram?.id === program.id && isProgramPlaying"
           :is-subscribed="subscribed.has(program.id)"
           :is-favorite="favorites.has(program.id)"
           @play="radioStore.playProgram"

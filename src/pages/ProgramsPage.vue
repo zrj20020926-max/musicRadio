@@ -192,7 +192,7 @@ const isLivePlaying = computed(() => {
         v-for="item in filteredItems"
         :key="item.id"
         :program="item"
-        :is-active="currentProgram?.id === item.id && isPlaying"
+        :is-active="currentProgram?.id === item.id && isProgramPlaying"
         :is-favorite="favorites.has(item.id)"
         :is-subscribed="subscribed.has(item.id)"
         @play="handlePlayNow"
