@@ -105,8 +105,7 @@ const screenLine2 = computed(() => {
 watch(lockedStation, (station, prev) => {
   if (station && (!prev || prev.stationuuid !== station.stationuuid)) {
     saveCurrentStation(station)
-    const alreadyActive =
-      currentStationId.value === (station.stationuuid || station.name)
+    const alreadyActive = currentStationId.value === (station.stationuuid || station.name)
     if (!alreadyActive) {
       radioStore.playStation(station)
     }
@@ -186,18 +185,18 @@ async function refreshStations() {
 }
 
 onMounted(async () => {
+  const hasCachedStations = Boolean(localStorage.getItem('retro_radio_real_stations'))
   const cached = loadCachedStations()
   if (cached.length) {
     setStations(cached)
     stationCount.value = cached.length
     lastUpdate.value = '缓存'
-  } else {
+  }
+  if (!hasCachedStations || !cached.length) {
     await refreshStations()
   }
   if (currentStationId.value && stationsWithFreq.value.length) {
-    const saved = stationsWithFreq.value.find(
-      (s) => s.stationuuid === currentStationId.value
-    )
+    const saved = stationsWithFreq.value.find((s) => s.stationuuid === currentStationId.value)
     if (saved) {
       tuneToStation(saved)
     }
@@ -251,14 +250,29 @@ onMounted(async () => {
             <div class="speaker-grille" :class="{ 'speaker-grille--active': isPlaying }">
               <div class="speaker-pattern"></div>
               <div class="speaker-cone">
-                <div class="cone-ring cone-ring--1" :class="{ 'cone-ring--active': isPlaying }"></div>
-                <div class="cone-ring cone-ring--2" :class="{ 'cone-ring--active': isPlaying }"></div>
-                <div class="cone-ring cone-ring--3" :class="{ 'cone-ring--active': isPlaying }"></div>
+                <div
+                  class="cone-ring cone-ring--1"
+                  :class="{ 'cone-ring--active': isPlaying }"
+                ></div>
+                <div
+                  class="cone-ring cone-ring--2"
+                  :class="{ 'cone-ring--active': isPlaying }"
+                ></div>
+                <div
+                  class="cone-ring cone-ring--3"
+                  :class="{ 'cone-ring--active': isPlaying }"
+                ></div>
                 <div class="cone-center" :class="{ 'cone-center--active': isPlaying }"></div>
               </div>
               <div class="speaker-wave" :class="{ 'speaker-wave--active': isPlaying }"></div>
-              <div class="speaker-wave speaker-wave--2" :class="{ 'speaker-wave--active': isPlaying }"></div>
-              <div class="speaker-wave speaker-wave--3" :class="{ 'speaker-wave--active': isPlaying }"></div>
+              <div
+                class="speaker-wave speaker-wave--2"
+                :class="{ 'speaker-wave--active': isPlaying }"
+              ></div>
+              <div
+                class="speaker-wave speaker-wave--3"
+                :class="{ 'speaker-wave--active': isPlaying }"
+              ></div>
             </div>
             <div class="vu-section">
               <SpectrumMeter :mode="spectrumMode" />
@@ -441,8 +455,12 @@ onMounted(async () => {
           </div>
           <div class="freq-modal-hint">范围 87.0 ~ 108.0</div>
           <div class="freq-modal-actions">
-            <button class="freq-modal-btn freq-modal-btn--cancel" @click="cancelFreqInput">取消</button>
-            <button class="freq-modal-btn freq-modal-btn--confirm" @click="confirmFreqInput">确认调频</button>
+            <button class="freq-modal-btn freq-modal-btn--cancel" @click="cancelFreqInput">
+              取消
+            </button>
+            <button class="freq-modal-btn freq-modal-btn--confirm" @click="confirmFreqInput">
+              确认调频
+            </button>
           </div>
         </div>
       </div>
@@ -719,7 +737,9 @@ onMounted(async () => {
   position: absolute;
   border-radius: 50%;
   border: 1px solid rgba(180, 140, 80, 0.15);
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 .cone-ring--1 {
   inset: 0;
@@ -753,10 +773,14 @@ onMounted(async () => {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(80, 60, 30, 0.9), rgba(40, 30, 15, 0.95));
   border: 1px solid rgba(140, 100, 50, 0.3);
-  transition: box-shadow 0.3s, transform 0.2s;
+  transition:
+    box-shadow 0.3s,
+    transform 0.2s;
 }
 .cone-center--active {
-  box-shadow: 0 0 12px rgba(200, 160, 64, 0.4), 0 0 24px rgba(200, 160, 64, 0.15);
+  box-shadow:
+    0 0 12px rgba(200, 160, 64, 0.4),
+    0 0 24px rgba(200, 160, 64, 0.15);
   animation: cone-center-beat 0.4s ease-in-out infinite alternate;
 }
 
@@ -802,28 +826,64 @@ onMounted(async () => {
 }
 
 @keyframes grille-vibrate {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(0.3px, -0.2px); }
-  50% { transform: translate(-0.2px, 0.3px); }
-  75% { transform: translate(0.2px, 0.2px); }
-  100% { transform: translate(-0.3px, -0.1px); }
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(0.3px, -0.2px);
+  }
+  50% {
+    transform: translate(-0.2px, 0.3px);
+  }
+  75% {
+    transform: translate(0.2px, 0.2px);
+  }
+  100% {
+    transform: translate(-0.3px, -0.1px);
+  }
 }
 
 @keyframes cone-pulse-1 {
-  from { transform: scale(1); opacity: 0.7; }
-  to { transform: scale(1.03); opacity: 1; }
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.03);
+    opacity: 1;
+  }
 }
 @keyframes cone-pulse-2 {
-  from { transform: scale(1); opacity: 0.6; }
-  to { transform: scale(1.05); opacity: 1; }
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.05);
+    opacity: 1;
+  }
 }
 @keyframes cone-pulse-3 {
-  from { transform: scale(0.97); opacity: 0.5; }
-  to { transform: scale(1.06); opacity: 1; }
+  from {
+    transform: scale(0.97);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
 }
 @keyframes cone-center-beat {
-  from { transform: scale(1); box-shadow: 0 0 8px rgba(200, 160, 64, 0.3); }
-  to { transform: scale(1.1); box-shadow: 0 0 16px rgba(200, 160, 64, 0.6), 0 0 30px rgba(200, 160, 64, 0.2); }
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(200, 160, 64, 0.3);
+  }
+  to {
+    transform: scale(1.1);
+    box-shadow:
+      0 0 16px rgba(200, 160, 64, 0.6),
+      0 0 30px rgba(200, 160, 64, 0.2);
+  }
 }
 
 .vu-section {
@@ -1232,8 +1292,7 @@ onMounted(async () => {
 }
 
 .freq-modal {
-  background:
-    linear-gradient(180deg, #4a3520 0%, #3b2814 40%, #2e1f0d 100%);
+  background: linear-gradient(180deg, #4a3520 0%, #3b2814 40%, #2e1f0d 100%);
   border: 2px solid #8b6838;
   border-radius: 12px;
   padding: 28px 32px;
@@ -1291,7 +1350,9 @@ onMounted(async () => {
 
 .freq-modal-input:focus {
   border-color: #c8a040;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 8px rgba(200, 160, 64, 0.2);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.6),
+    0 0 8px rgba(200, 160, 64, 0.2);
 }
 
 .freq-modal-hint {

@@ -875,6 +875,7 @@ export const useRadioStore = defineStore('radio', () => {
     favoriteFmStations,
     subscribedStations,
     recentPrograms,
+    playHistory,
     favorites,
     subscribed,
     stats,

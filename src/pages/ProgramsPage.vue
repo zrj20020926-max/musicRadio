@@ -54,6 +54,10 @@ const sentinel = ref(null)
 let observer = null
 
 onMounted(() => {
+  if (!programs.value.length && updateStatus.value !== 'loading') {
+    radioStore.updateExternalContent()
+  }
+
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && !loadingMore.value) {
@@ -87,6 +91,11 @@ function handleFavorite(programId) {
 
 function handleSubscribe(programId) {
   radioStore.toggleSubscribe(programId)
+}
+
+function clearFilters() {
+  activeTag.value = '全部'
+  keyword.value = ''
 }
 
 const isLivePlaying = computed(() => {
@@ -229,13 +238,7 @@ const isLivePlaying = computed(() => {
       </div>
       <p class="empty-title">没有找到匹配的节目档案</p>
       <p class="empty-hint">换个关键词试试，或清空筛选查看全部内容</p>
-      <button
-        type="button"
-        class="empty-reset"
-        @click="activeTag = '全部'; keyword = ''"
-      >
-        清空筛选
-      </button>
+      <button type="button" class="empty-reset" @click="clearFilters">清空筛选</button>
     </section>
 
     <!-- 6. Infinite scroll sentinel + loading -->

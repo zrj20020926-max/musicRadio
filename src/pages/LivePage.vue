@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import LiveVisualStage from '../components/LiveVisualStage.vue'
 import { useRadioStore } from '../stores/radio'
@@ -45,6 +45,12 @@ function markStationIconBroken(station) {
   if (!station?.stationuuid) return
   brokenStationIcons.value.add(station.stationuuid)
 }
+
+onMounted(() => {
+  if (!stations.value.length && !stationsRefreshing.value) {
+    radioStore.refreshStations()
+  }
+})
 </script>
 
 <template>
