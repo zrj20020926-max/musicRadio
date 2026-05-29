@@ -11,6 +11,7 @@ const radioStore = useRadioStore()
 const {
   programs,
   currentProgram,
+  currentStationId,
   isPlaying,
   liveProgram,
   favorites,
@@ -99,8 +100,10 @@ function clearFilters() {
 }
 
 const isLivePlaying = computed(() => {
-  return isPlaying.value && currentProgram.value?.id === liveProgram.value?.id
+  return !currentStationId.value && isPlaying.value && currentProgram.value?.id === liveProgram.value?.id
 })
+
+const isProgramPlaying = computed(() => !currentStationId.value && isPlaying.value)
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useRadioStore } from '../stores/radio'
@@ -23,24 +23,11 @@ const {
   durationLabel,
   sleepDeadline,
   sleepRemainingLabel,
+  listeningMinutes,
+  listeningHourPart,
+  listeningMinutePart,
 } = storeToRefs(radioStore)
 
-const PREFS_KEY = 'retro-radio-preferences'
-const prefs = reactive({
-  atmosphere: '深夜',
-  tone: '暖声',
-  animationIntensity: '标准',
-  grainIntensity: '中',
-  pageTheme: '暖灯',
-  showGrain: true,
-  showAnimations: true,
-  showScanlines: true,
-})
-
-const atmosphereOptions = ['深夜', '午后', '雨天', '专注', '怀旧']
-const toneOptions = ['暖声', '清晰', '低噪', '胶片感']
-const animOptions = ['关闭', '轻微', '标准', '强']
-const grainOptions = ['低', '中', '高']
 const sleepOptions = [0, 15, 30, 45, 60]
 
 const showResetConfirm = ref(false)
@@ -94,11 +81,35 @@ const localSleepLabel = computed(() => {
   return sleepRemainingLabel.value
 })
 
+const listeningProgress = computed(() => Math.min((listeningMinutePart.value / 60) * 100, 100))
+
+const listeningSummary = computed(() => {
+  if (!listeningMinutes.value) return '今天从第一分钟开始记录'
+  if (listeningHourPart.value) {
+    return `已累计 ${listeningHourPart.value} 小时 ${listeningMinutePart.value} 分钟`
+  }
+  return `已累计 ${listeningMinutes.value} 分钟`
+})
+
 const historyItems = computed(() => {
   if (!playHistory.value || !playHistory.value.length) return []
-  return playHistory.value.slice(0, 20).map((id) => {
-    const program = radioStore.getProgramById(id)
-    return program ? { id, title: program.title, type: '节目' } : { id, title: id, type: '未知' }
+  return playHistory.value.slice(0, 20).map((entry) => {
+    const normalized = typeof entry === 'string' ? { type: 'program', id: entry } : entry
+
+    if (normalized.type === 'station') {
+      const station = radioStore.getStationById(normalized.id) || normalized.station || null
+      return {
+        id: normalized.id,
+        title: station?.name || normalized.title || normalized.id,
+        type: '电台',
+        station,
+      }
+    }
+
+    const program = radioStore.getProgramById(normalized.id)
+    return program
+      ? { id: normalized.id, title: program.title, type: '节目' }
+      : { id: normalized.id, title: normalized.id, type: '未知' }
   }).filter(item => item.title !== item.id || item.type !== '未知')
 })
 
@@ -139,8 +150,12 @@ function cancelSleep() {
   radioStore.setSleepTimer(0)
 }
 
-function playHistoryItem(id) {
-  radioStore.playProgram(id)
+function playHistoryItem(item) {
+  if (item.type === '电台' && item.station) {
+    radioStore.playStation(item.station)
+    return
+  }
+  radioStore.playProgram(item.id)
 }
 
 function exportData() {
@@ -185,21 +200,7 @@ function resetAll() {
   window.location.reload()
 }
 
-function loadPrefs() {
-  try {
-    const raw = localStorage.getItem(PREFS_KEY)
-    if (raw) Object.assign(prefs, JSON.parse(raw))
-  } catch { /* ignore corrupt data */ }
-}
-
-function savePrefs() {
-  localStorage.setItem(PREFS_KEY, JSON.stringify({ ...prefs }))
-}
-
-watch(() => ({ ...prefs }), () => { savePrefs() }, { deep: true })
-
 onMounted(() => {
-  loadPrefs()
   tickInterval = setInterval(() => { tick.value++ }, 1000)
 })
 
@@ -276,64 +277,35 @@ onUnmounted(() => {
           <template v-else>
             <div class="screen-empty">
               <p class="empty-text">还没有调到频道</p>
-              <p class="empty-hint">去节目或电台页选择内容播放</p>
+              <p class="empty-hint">去节目或电台页面选择内容播放</p>
             </div>
           </template>
         </div>
       </div>
 
-      <!-- RIGHT: Preferences + Sleep Timer -->
+      <!-- RIGHT: Listening Stats + Sleep Timer -->
       <div class="right-panels">
-        <!-- Sound Preferences -->
-        <div class="prefs-panel">
-          <div class="panel-label">SOUND PREFERENCES</div>
-          <div class="prefs-content">
-            <div class="pref-row">
-              <span class="pref-label">氛围</span>
-              <div class="switch-group">
-                <button
-                  v-for="opt in atmosphereOptions"
-                  :key="opt"
-                  class="mech-switch"
-                  :class="{ 'mech-switch--active': prefs.atmosphere === opt }"
-                  @click="prefs.atmosphere = opt"
-                >{{ opt }}</button>
+        <!-- Listening Time -->
+        <div class="stats-panel">
+          <div class="panel-label">LISTENING TIME</div>
+          <div class="listening-stat">
+            <div class="stat-meter" :style="{ '--listen-progress': listeningProgress + '%' }">
+              <div class="stat-meter-face">
+                <span class="stat-meter-value">{{ listeningMinutePart }}</span>
+                <span class="stat-meter-unit">MIN</span>
               </div>
             </div>
-            <div class="pref-row">
-              <span class="pref-label">音色</span>
-              <div class="switch-group">
-                <button
-                  v-for="opt in toneOptions"
-                  :key="opt"
-                  class="mech-switch"
-                  :class="{ 'mech-switch--active': prefs.tone === opt }"
-                  @click="prefs.tone = opt"
-                >{{ opt }}</button>
+            <div class="stat-copy">
+              <p class="stat-title">累计收听时长</p>
+              <div class="stat-time">
+                <span class="stat-number">{{ listeningHourPart }}</span>
+                <span class="stat-unit">小时</span>
+                <span class="stat-number">{{ listeningMinutePart }}</span>
+                <span class="stat-unit">分钟</span>
               </div>
-            </div>
-            <div class="pref-row">
-              <span class="pref-label">动画</span>
-              <div class="switch-group">
-                <button
-                  v-for="opt in animOptions"
-                  :key="opt"
-                  class="mech-switch"
-                  :class="{ 'mech-switch--active': prefs.animationIntensity === opt }"
-                  @click="prefs.animationIntensity = opt"
-                >{{ opt }}</button>
-              </div>
-            </div>
-            <div class="pref-row">
-              <span class="pref-label">颗粒</span>
-              <div class="switch-group">
-                <button
-                  v-for="opt in grainOptions"
-                  :key="opt"
-                  class="mech-switch"
-                  :class="{ 'mech-switch--active': prefs.grainIntensity === opt }"
-                  @click="prefs.grainIntensity = opt"
-                >{{ opt }}</button>
+              <p class="stat-note">{{ listeningSummary }}</p>
+              <div class="stat-progress">
+                <span :style="{ width: listeningProgress + '%' }" />
               </div>
             </div>
           </div>
@@ -358,7 +330,7 @@ onUnmounted(() => {
                 class="mech-switch"
                 :class="{ 'mech-switch--active': !sleepDeadline && m === 0 || (sleepDeadline && currentSleepMinutes <= m && currentSleepMinutes > (m - 15)) }"
                 @click="setSleep(m)"
-              >{{ m === 0 ? '关闭' : m + '分' }}</button>
+              >{{ m === 0 ? '关闭' : m + '分钟' }}</button>
             </div>
             <button v-if="sleepDeadline" class="cancel-timer-btn" @click="cancelSleep">取消定时</button>
           </div>
@@ -431,14 +403,14 @@ onUnmounted(() => {
         </div>
 
         <div v-if="!favoritePrograms.length && !favoriteFmStationList.length && !favoriteStationList.length" class="empty-state">
-          <p class="empty-label">还没有收进口袋的声音</p>
+          <p class="empty-label">还没有收藏的声音</p>
         </div>
       </div>
 
       <!-- RIGHT: Subscriptions -->
       <div class="subscriptions-panel">
         <div class="panel-label">SUBSCRIBED CHANNELS</div>
-        <p class="section-title">固定收听</p>
+        <p class="section-title">订阅的声音</p>
 
         <!-- Subscribed Programs -->
         <div v-if="subscribedPrograms.length" class="drawer-grid">
@@ -477,7 +449,7 @@ onUnmounted(() => {
         </div>
 
         <div v-if="!subscribedPrograms.length && !subscribedStationList.length" class="empty-state">
-          <p class="empty-label">还没有固定收听的频道</p>
+          <p class="empty-label">还没有订阅的节目或电台</p>
         </div>
       </div>
     </div>
@@ -492,7 +464,7 @@ onUnmounted(() => {
             v-for="item in historyItems"
             :key="item.id"
             class="history-tape"
-            @click="playHistoryItem(item.id)"
+            @click="playHistoryItem(item)"
           >
             <span class="history-strip" />
             <div class="history-info">
@@ -836,45 +808,108 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-/* Preferences Panel */
-.prefs-panel {
-  background: linear-gradient(160deg, #2e1f0d, #1a1008);
-  border: 2px solid #5a3d25;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+/* Listening Stats */
+.stats-panel {
   position: relative;
   overflow: hidden;
+  min-width: 0;
+  border: 1px solid rgba(220, 168, 86, 0.34);
+  border-radius: 14px;
+  padding: 18px 20px;
+  background:
+    linear-gradient(150deg, rgba(63, 42, 22, 0.96), rgba(25, 15, 8, 0.98)),
+    #20150c;
+  box-shadow:
+    0 18px 40px rgba(34, 20, 8, 0.25),
+    inset 0 1px 0 rgba(255, 229, 180, 0.08);
 }
-.prefs-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.04;
-  pointer-events: none;
-}
-.prefs-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.pref-row {
+.listening-stat {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
 }
-.pref-label {
-  font-family: 'Noto Sans SC', sans-serif;
-  font-size: 0.78rem;
-  color: rgba(250, 244, 232, 0.55);
-  min-width: 36px;
-  flex-shrink: 0;
+.stat-meter {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background:
+    conic-gradient(#e8a030 var(--listen-progress), rgba(62, 42, 23, 0.95) 0),
+    #1a1008;
 }
-.switch-group {
+.stat-meter-face {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 35%, #342314, #100904 78%);
+  border: 1px solid rgba(232, 160, 48, 0.2);
+}
+.stat-meter-value {
+  font-family: 'Courier New', monospace;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffd890;
+  text-shadow: 0 0 12px rgba(232, 160, 48, 0.4);
+}
+.stat-meter-unit {
+  margin-top: -4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: rgba(255, 216, 144, 0.52);
+}
+.stat-copy {
+  min-width: 0;
+  flex: 1;
+}
+.stat-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(250, 244, 232, 0.9);
+}
+.stat-time {
   display: flex;
-  flex-wrap: wrap;
+  align-items: baseline;
   gap: 6px;
+  margin-top: 8px;
+  white-space: nowrap;
+}
+.stat-number {
+  font-family: 'Courier New', monospace;
+  font-size: clamp(1.8rem, 4vw, 2.35rem);
+  font-weight: 700;
+  color: #e8a030;
+}
+.stat-unit,
+.stat-note {
+  color: rgba(250, 244, 232, 0.54);
+}
+.stat-unit {
+  font-size: 0.72rem;
+}
+.stat-note {
+  margin-top: 5px;
+  font-size: 0.72rem;
+}
+.stat-progress {
+  height: 4px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(12, 7, 3, 0.62);
+}
+.stat-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #a35f24, #e8a030, #ffd890);
 }
 
 /* Mechanical Switch */
