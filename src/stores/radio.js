@@ -36,6 +36,18 @@ function isHlsUrl(url) {
   return url && (url.includes('.m3u8') || url.includes('m3u8'))
 }
 
+function getPlayableUrl(station) {
+  const url = station?.url_resolved || station?.url || ''
+  if (
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    /^http:\/\//i.test(url)
+  ) {
+    return url.replace(/^http:\/\//i, 'https://')
+  }
+  return url
+}
+
 const FAVORITES_KEY = 'retro-radio-favorites'
 const SUBSCRIBED_KEY = 'retro-radio-subscribed'
 const CURRENT_KEY = 'retro-radio-current-program'
@@ -617,7 +629,7 @@ export const useRadioStore = defineStore('radio', () => {
     playbackStatus.value = 'loading'
     playbackError.value = ''
     hasRealSource = true
-    const streamUrl = station.url_resolved || station.url
+    const streamUrl = getPlayableUrl(station)
     if (audio) {
       if (isHlsUrl(streamUrl) && Hls.isSupported()) {
         hls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 30 })
@@ -694,7 +706,7 @@ export const useRadioStore = defineStore('radio', () => {
           (s) => (s.stationuuid || s.name) === currentStationId.value,
         )
         if (stationObj) {
-          const url = stationObj.url_resolved || stationObj.url
+          const url = getPlayableUrl(stationObj)
           if (url) {
             audio.src = url
             audio.load()
@@ -768,7 +780,7 @@ export const useRadioStore = defineStore('radio', () => {
         stationCache.value.get(currentStationId.value)
       if (savedStationObj) {
         currentStationObj.value = savedStationObj
-        const url = savedStationObj.url_resolved || savedStationObj.url
+        const url = getPlayableUrl(savedStationObj)
         if (url) {
           hasRealSource = true
           playbackStatus.value = 'loading'
