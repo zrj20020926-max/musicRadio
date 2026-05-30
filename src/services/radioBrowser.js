@@ -1,6 +1,7 @@
 const API_BASE = 'https://de1.api.radio-browser.info/json/stations/search'
 
 const PREFERRED_CODECS = ['mp3', 'aac', 'ogg', 'hls']
+const HTTP_URL_RE = /^http:\/\//i
 
 const STRATEGIES = [
   { countrycode: 'CN', hidebroken: true, order: 'votes', reverse: true, limit: 80 },
@@ -12,8 +13,8 @@ const KNOWN_CN_STATIONS = [
   {
     stationuuid: 'known-fm93-zhejiang-traffic',
     name: '浙江交通之声',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm93/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm93/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm93/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm93/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -23,14 +24,14 @@ const KNOWN_CN_STATIONS = [
     bitrate: 128,
     votes: 256,
     clickcount: 100,
-    favicon: 'http://pic.qingting.fm/2020/0405/20200405120311.jpeg',
+    favicon: 'https://pic.qingting.fm/2020/0405/20200405120311.jpeg',
     lastcheckok: 1,
   },
   {
     stationuuid: 'known-fm88-zhejiang-voice',
     name: '浙江之声',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm88/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm88/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm88/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm88/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -40,14 +41,14 @@ const KNOWN_CN_STATIONS = [
     bitrate: 128,
     votes: 426,
     clickcount: 50,
-    favicon: 'http://pic.qingting.fm/sso/198/1631507628107_SNMv8U_Ue.jpeg',
+    favicon: 'https://pic.qingting.fm/sso/198/1631507628107_SNMv8U_Ue.jpeg',
     lastcheckok: 1,
   },
   {
     stationuuid: 'known-fm968-zhejiang-music',
     name: '浙江音乐调频',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm968/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm968/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm968/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm968/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -63,8 +64,8 @@ const KNOWN_CN_STATIONS = [
   {
     stationuuid: 'known-fm95-zhejiang-economy',
     name: '浙江经济广播',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm95/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm95/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm95/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm95/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -80,8 +81,8 @@ const KNOWN_CN_STATIONS = [
   {
     stationuuid: 'known-fm107-zhejiang-city',
     name: '浙江城市之声',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm107/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm107/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm107/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm107/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -91,14 +92,14 @@ const KNOWN_CN_STATIONS = [
     bitrate: 128,
     votes: 163,
     clickcount: 30,
-    favicon: 'http://pic.qingting.fm/2016/0620/20160620160738275.png',
+    favicon: 'https://pic.qingting.fm/2016/0620/20160620160738275.png',
     lastcheckok: 1,
   },
   {
     stationuuid: 'known-fm1045-zhejiang-travel',
     name: '浙江旅游之声',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm1045/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm1045/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm1045/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm1045/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -108,7 +109,7 @@ const KNOWN_CN_STATIONS = [
     bitrate: 128,
     votes: 74,
     clickcount: 20,
-    favicon: 'http://pic.qingting.fm/sso/198/1631606706374_5N7WkixsO.jpeg',
+    favicon: 'https://pic.qingting.fm/sso/198/1631606706374_5N7WkixsO.jpeg',
     lastcheckok: 1,
   },
   {
@@ -131,8 +132,8 @@ const KNOWN_CN_STATIONS = [
   {
     stationuuid: 'known-fm988-zhejiang-news',
     name: '浙江新闻广播',
-    url: 'http://ali-m-l.cztv.com/channels/lantian/fm988/128k.m3u8',
-    url_resolved: 'http://ali-m-l.cztv.com/channels/lantian/fm988/128k.m3u8',
+    url: 'https://ali-m-l.cztv.com/channels/lantian/fm988/128k.m3u8',
+    url_resolved: 'https://ali-m-l.cztv.com/channels/lantian/fm988/128k.m3u8',
     country: 'China',
     countrycode: 'CN',
     state: 'Zhejiang',
@@ -142,7 +143,7 @@ const KNOWN_CN_STATIONS = [
     bitrate: 128,
     votes: 101,
     clickcount: 20,
-    favicon: 'http://pic.qingting.fm/sso/198/1631606384323_Mz_8v-pxj.jpeg',
+    favicon: 'https://pic.qingting.fm/sso/198/1631606384323_Mz_8v-pxj.jpeg',
     lastcheckok: 1,
   },
 ]
@@ -152,6 +153,20 @@ function buildUrl(params) {
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
   url.searchParams.set('_t', Date.now())
   return url.toString()
+}
+
+function preferHttps(url) {
+  if (!url || !HTTP_URL_RE.test(url)) return url
+  return url.replace(HTTP_URL_RE, 'https://')
+}
+
+function normalizeStation(station) {
+  return {
+    ...station,
+    url: preferHttps(station.url),
+    url_resolved: preferHttps(station.url_resolved),
+    favicon: preferHttps(station.favicon),
+  }
 }
 
 function scoreStation(s) {
@@ -171,7 +186,7 @@ export async function fetchRadioStations(customParams) {
 
   for (const known of KNOWN_CN_STATIONS) {
     seen.add(known.stationuuid)
-    allStations.push(known)
+    allStations.push(normalizeStation(known))
   }
 
   for (const params of strategies) {
@@ -185,7 +200,7 @@ export async function fetchRadioStations(customParams) {
         if (!s.url_resolved && !s.url) continue
         if (seen.has(s.stationuuid)) continue
         seen.add(s.stationuuid)
-        allStations.push(s)
+        allStations.push(normalizeStation(s))
       }
     } catch (e) {
       console.warn('[radio-browser] strategy failed', params, e)
@@ -209,8 +224,8 @@ export function loadCachedStations() {
   try {
     const raw = localStorage.getItem('retro_radio_real_stations')
     const cached = raw ? JSON.parse(raw) : []
-    return mergeKnownStations(cached)
-  } catch { return [...KNOWN_CN_STATIONS] }
+    return mergeKnownStations(cached.map(normalizeStation))
+  } catch { return KNOWN_CN_STATIONS.map(normalizeStation) }
 }
 
 function mergeKnownStations(stations) {
@@ -218,7 +233,7 @@ function mergeKnownStations(stations) {
   const merged = [...stations]
   for (const known of KNOWN_CN_STATIONS) {
     if (!seen.has(known.stationuuid)) {
-      merged.push(known)
+      merged.push(normalizeStation(known))
     }
   }
   return merged
