@@ -15,6 +15,7 @@ import {
   saveProgramsContent,
   saveStationsContent,
 } from '../storage/localContent'
+import { programs as seedPrograms } from '../data/programs'
 
 let audio = null
 let hls = null
@@ -45,6 +46,7 @@ const FAVORITE_STATIONS_KEY = 'retro-radio-favorite-stations'
 const FAVORITE_FM_STATIONS_KEY = 'retro-radio-favorite-fm-stations'
 const SUBSCRIBED_STATIONS_KEY = 'retro-radio-subscribed-stations'
 const STATION_CACHE_KEY = 'retro-radio-station-cache'
+const LISTENING_SECONDS_KEY = 'retro-radio-listening-seconds'
 
 const EMPTY_PROGRAM = {
   id: '',
@@ -76,6 +78,12 @@ function loadString(key, fallback) {
   return window.localStorage.getItem(key) || fallback
 }
 
+function loadNumber(key, fallback = 0) {
+  if (typeof window === 'undefined') return fallback
+  const value = Number(window.localStorage.getItem(key))
+  return Number.isFinite(value) ? value : fallback
+}
+
 function parseDurationToSec(duration) {
   if (!duration || duration === '直播中') return 45 * 60
   const [m = '0', s = '0'] = String(duration).split(':')
@@ -86,9 +94,9 @@ function parseDurationToSec(duration) {
 }
 
 export const useRadioStore = defineStore('radio', () => {
-  const programs = ref(loadProgramsContent([]))
+  const programs = ref(loadProgramsContent(seedPrograms))
   if (!hasProgramsContent()) {
-    saveProgramsContent([])
+    saveProgramsContent(seedPrograms)
   }
   const stations = ref(loadStationsContent())
   const lastUpdatedAt = ref(loadLastUpdatedAt())
@@ -113,7 +121,7 @@ export const useRadioStore = defineStore('radio', () => {
   const favoriteStations = ref(new Set(loadArray(FAVORITE_STATIONS_KEY)))
   const favoriteFmStations = ref(new Set(loadArray(FAVORITE_FM_STATIONS_KEY)))
   const subscribedStations = ref(new Set(loadArray(SUBSCRIBED_STATIONS_KEY)))
-  const stationCache = ref(new Map(loadArray(STATION_CACHE_KEY).map((s) => [s.stationuuid, s])))
+  const stationCache = ref(new Map(loadArray(STATION_CACHE_KEY).map((s) => [s.stationuuid || s.name, s])))
 
   // Migrate: move CN/FM stations from international favorites to FM favorites
   for (const id of favoriteStations.value) {
@@ -132,6 +140,7 @@ export const useRadioStore = defineStore('radio', () => {
   const currentEpisodeIndex = ref(0)
   const audioDuration = ref(0)
   const sleepDeadline = ref(null)
+  const listeningSeconds = ref(loadNumber(LISTENING_SECONDS_KEY))
 
   const programMap = computed(() => new Map(programs.value.map((item) => [item.id, item])))
 
@@ -193,6 +202,10 @@ export const useRadioStore = defineStore('radio', () => {
     return `${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`
   })
 
+  const listeningMinutes = computed(() => Math.floor(listeningSeconds.value / 60))
+  const listeningHourPart = computed(() => Math.floor(listeningMinutes.value / 60))
+  const listeningMinutePart = computed(() => listeningMinutes.value % 60)
+
   const featuredPrograms = computed(() => programs.value.slice(0, 3))
 
   const liveProgram = computed(
@@ -249,7 +262,7 @@ export const useRadioStore = defineStore('radio', () => {
   const stats = computed(() => ({
     subscribedCount: subscribed.value.size + subscribedStations.value.size,
     favoriteCount: favorites.value.size + favoriteStations.value.size,
-    listenHours: Math.max(24, recentPrograms.value.length * 12 + 48),
+    listenHours: Math.floor(listeningMinutes.value / 60),
   }))
 
   const feedbackMessage = ref('')
@@ -272,7 +285,9 @@ export const useRadioStore = defineStore('radio', () => {
         osc.start(strumCtx.currentTime + i * 0.04)
         osc.stop(strumCtx.currentTime + i * 0.04 + 0.55)
       })
-    } catch {}
+    } catch (error) {
+      console.error('Error playing strum:', error)
+    }
   }
 
   function pushToast(message) {
@@ -284,11 +299,17 @@ export const useRadioStore = defineStore('radio', () => {
     }, 2200)
   }
 
-  function updatePlayHistory(programId) {
-    playHistory.value = [programId, ...playHistory.value.filter((id) => id !== programId)].slice(
-      0,
-      20,
-    )
+  function getHistoryKey(item) {
+    return typeof item === 'string' ? `program:${item}` : `${item.type}:${item.id}`
+  }
+
+  function updatePlayHistory(item) {
+    const entry = typeof item === 'string' ? { type: 'program', id: item } : item
+    const entryKey = getHistoryKey(entry)
+    playHistory.value = [
+      entry,
+      ...playHistory.value.filter((historyItem) => getHistoryKey(historyItem) !== entryKey),
+    ].slice(0, 20)
   }
 
   function ensureCurrentProgramValid() {
@@ -300,6 +321,8 @@ export const useRadioStore = defineStore('radio', () => {
   function loadAudioSource() {
     if (!audio) return
     currentStationId.value = null
+    currentStationObj.value = null
+    destroyHls()
     audioDuration.value = 0
     const episode = currentEpisode.value
     const url = episode?.audioUrl || ''
@@ -325,7 +348,7 @@ export const useRadioStore = defineStore('radio', () => {
     playbackStatus.value = 'playing'
     playbackError.value = ''
     clearTimeout(loadTimeoutId)
-    updatePlayHistory(programId)
+    updatePlayHistory({ type: 'program', id: programId })
     queue.value = queue.value.filter((id) => id !== programId)
     loadAudioSource()
     if (audio && audio.src) {
@@ -334,7 +357,11 @@ export const useRadioStore = defineStore('radio', () => {
   }
 
   function togglePlay(programId) {
-    if (programId && programMap.value.has(programId) && currentProgramId.value !== programId) {
+    if (
+      programId &&
+      programMap.value.has(programId) &&
+      (currentProgramId.value !== programId || currentStationId.value)
+    ) {
       playProgram(programId)
       return
     }
@@ -497,6 +524,12 @@ export const useRadioStore = defineStore('radio', () => {
     return programMap.value.get(programId)
   }
 
+  function getStationById(stationId) {
+    return stations.value.find((s) => (s.stationuuid || s.name) === stationId)
+      || stationCache.value.get(stationId)
+      || null
+  }
+
   async function updateExternalContent() {
     console.log('[update-programs] clicked')
     updateStatus.value = 'loading'
@@ -575,6 +608,12 @@ export const useRadioStore = defineStore('radio', () => {
       stationCache.value.set(id, station)
       stationCache.value = new Map(stationCache.value)
     }
+    updatePlayHistory({
+      type: 'station',
+      id,
+      title: station.name || id,
+      station,
+    })
     playbackStatus.value = 'loading'
     playbackError.value = ''
     hasRealSource = true
@@ -783,6 +822,7 @@ export const useRadioStore = defineStore('radio', () => {
         }
       }
       if (!isPlaying.value) return
+      listeningSeconds.value += 1
       if (!hasRealSource && !currentStationId.value) {
         if (progress.value >= durationSec.value) {
           playNext()
@@ -845,6 +885,9 @@ export const useRadioStore = defineStore('radio', () => {
   watch(queue, (value) => window.localStorage.setItem(QUEUE_KEY, JSON.stringify(value)), {
     deep: true,
   })
+  watch(listeningSeconds, (value) => {
+    window.localStorage.setItem(LISTENING_SECONDS_KEY, String(value))
+  })
 
   return {
     programs,
@@ -889,6 +932,9 @@ export const useRadioStore = defineStore('radio', () => {
     durationLabel,
     sleepRemainingSec,
     sleepRemainingLabel,
+    listeningMinutes,
+    listeningHourPart,
+    listeningMinutePart,
     togglePlay,
     playProgram,
     playNext,
@@ -903,6 +949,7 @@ export const useRadioStore = defineStore('radio', () => {
     toggleSubscribeStation,
     refreshStations,
     getProgramById,
+    getStationById,
     updateExternalContent,
     loadMorePrograms,
     loadingMore,

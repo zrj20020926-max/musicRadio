@@ -15,6 +15,7 @@ const {
   favorites,
   isPlaying,
   playbackStatus,
+  currentStationId,
   currentEpisodeIndex,
   durationLabel,
 } = storeToRefs(radioStore)
@@ -22,6 +23,8 @@ const {
 const program = computed(() => radioStore.getProgramById(route.params.id))
 const hasProgram = computed(() => Boolean(program.value))
 const episodeList = computed(() => program.value?.episodes || [])
+const isProgramPlaying = computed(() => !currentStationId.value && isPlaying.value)
+
 const isCurrentProgram = computed(
   () => program.value && radioStore.currentProgram?.id === program.value.id,
 )
@@ -39,7 +42,7 @@ const relatedPrograms = computed(() =>
 )
 
 const statusText = computed(() => {
-  if (!isCurrentProgram.value) return '点击播放'
+  if (!isCurrentProgram.value || currentStationId.value) return '点击播放'
   switch (playbackStatus.value) {
     case 'loading':
       return '正在连接...'
@@ -154,7 +157,9 @@ function subscribeRelated(id) {
                 <span class="cover-freq">{{ program.cover?.frequency || 'FM' }}</span>
               </div>
               <div class="cover-gradient" />
-              <span v-if="program.isLive || (isCurrentProgram && isPlaying)" class="cover-onair"
+              <span
+                v-if="program.isLive || (isCurrentProgram && isProgramPlaying)"
+                class="cover-onair"
                 >ON AIR</span
               >
               <!-- Frequency dial decoration -->
@@ -168,6 +173,7 @@ function subscribeRelated(id) {
           <div class="control-panel">
             <button
               type="button"
+              Program
               class="play-btn"
               :class="{ 'play-btn--active': isCurrentProgram && isPlaying }"
               @click="handlePlay"
@@ -187,14 +193,15 @@ function subscribeRelated(id) {
             <span
               class="control-status"
               :class="{
-                'control-status--live': isCurrentProgram && isPlaying,
-                'control-status--err': isCurrentProgram && playbackStatus === 'error',
+                'control-status--live': isCurrentProgram && isProgramPlaying,
+                'control-status--err':
+                  isCurrentProgram && !currentStationId && playbackStatus === 'error',
               }"
             >
               {{ statusText }}
             </span>
             <div class="control-wave">
-              <Waveform :animated="isCurrentProgram && isPlaying" />
+              <Waveform :animated="isCurrentProgram && isProgramPlaying" />
             </div>
           </div>
 
@@ -234,7 +241,7 @@ function subscribeRelated(id) {
               <svg viewBox="0 0 16 16" fill="currentColor" class="act-icon">
                 <path d="M4 2l10 6-10 6z" />
               </svg>
-              <span>{{ isCurrentProgram && isPlaying ? '暂停' : '播放最新' }}</span>
+              <span>{{ isCurrentProgram && isProgramPlaying ? '暂停' : '播放最新' }}</span>
             </button>
             <button
               type="button"
@@ -305,7 +312,7 @@ function subscribeRelated(id) {
                 </div>
                 <div class="ep-right">
                   <div
-                    v-if="isCurrentProgram && index === currentEpisodeIndex && isPlaying"
+                    v-if="isCurrentProgram && index === currentEpisodeIndex && isProgramPlaying"
                     class="ep-wave"
                   >
                     <span
@@ -361,7 +368,7 @@ function subscribeRelated(id) {
             v-for="rp in relatedPrograms"
             :key="rp.id"
             :program="rp"
-            :is-active="radioStore.currentProgram?.id === rp.id && isPlaying"
+            :is-active="radioStore.currentProgram?.id === rp.id && isProgramPlaying"
             :is-favorite="favorites.has(rp.id)"
             :is-subscribed="subscribed.has(rp.id)"
             @play="playRelated"

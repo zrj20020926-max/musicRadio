@@ -1,5 +1,5 @@
 <script setup>
-const props = defineProps({
+defineProps({
   spinning: { type: Boolean, default: false },
 })
 </script>

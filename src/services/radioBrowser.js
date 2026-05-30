@@ -202,7 +202,7 @@ export async function fetchRadioStations(customParams) {
 export function saveCachedStations(stations) {
   try {
     localStorage.setItem('retro_radio_real_stations', JSON.stringify(stations))
-  } catch (e) { /* quota */ }
+  } catch { /* quota */ }
 }
 
 export function loadCachedStations() {
@@ -227,7 +227,7 @@ function mergeKnownStations(stations) {
 export function saveCurrentStation(station) {
   try {
     localStorage.setItem('retro_radio_current_station', JSON.stringify(station))
-  } catch (e) { /* quota */ }
+  } catch { /* quota */ }
 }
 
 export function loadCurrentStation() {

@@ -1,14 +1,16 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import TopNav from './components/TopNav.vue'
 import GlobalPlayerBar from './components/GlobalPlayerBar.vue'
+import ImmersivePlayer from './components/ImmersivePlayer.vue'
 import { useRadioStore } from './stores/radio'
 
 const route = useRoute()
 const router = useRouter()
 const radioStore = useRadioStore()
+const isImmersiveOpen = ref(false)
 const {
   currentProgram,
   currentStationId,
@@ -47,6 +49,14 @@ function handleNavigate(key) {
     router.push(target.path)
   }
 }
+
+function handleTogglePlayback() {
+  if (currentStationId.value) {
+    radioStore.toggleStation()
+  } else {
+    radioStore.togglePlay(currentProgram.value?.id)
+  }
+}
 </script>
 
 <template>
@@ -69,13 +79,25 @@ function handleNavigate(key) {
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
       :feedback="feedbackMessage"
-      @toggle="
-        currentStationId ? radioStore.toggleStation() : radioStore.togglePlay(currentProgram?.id)
-      "
+      @toggle="handleTogglePlayback"
       @seek="radioStore.setProgress"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"
       @retry="radioStore.retryStation"
+      @open-immersive="isImmersiveOpen = true"
+    />
+    <ImmersivePlayer
+      v-if="isImmersiveOpen"
+      :program="currentProgram"
+      :station="currentStationObj"
+      :is-playing="isPlaying"
+      :playback-status="playbackStatus"
+      :progress-label="progressLabel"
+      :duration-label="durationLabel"
+      @close="isImmersiveOpen = false"
+      @toggle="handleTogglePlayback"
+      @next="radioStore.playNext"
+      @prev="radioStore.playPrevious"
     />
   </div>
 </template>

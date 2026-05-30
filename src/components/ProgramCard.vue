@@ -124,7 +124,7 @@ const visualType = computed(() => {
 
 .visual-card--active {
   border-color: rgba(180, 130, 70, 0.6);
-  box-shadow: 0 0 0 2px rgba(180, 130, 70, 0.12), 0 6px 20px rgba(40, 25, 12, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(180, 130, 70, 0.12), 0 6px 20px rgba(40, 25, 12, 0.1);
   animation: card-glow 3s ease-in-out infinite;
 }
 
@@ -271,13 +271,16 @@ const visualType = computed(() => {
 .act-play {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  width: 84px;
   padding: 6px 14px;
   border-radius: 6px;
   background: #2c1b10;
   border: none;
   color: #faf4e8;
   font-size: 13px;
+  white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s;
@@ -346,7 +349,7 @@ const visualType = computed(() => {
 }
 
 @keyframes card-glow {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(180, 130, 70, 0.12), 0 6px 20px rgba(40, 25, 12, 0.1); }
-  50% { box-shadow: 0 0 0 2px rgba(180, 130, 70, 0.2), 0 6px 20px rgba(40, 25, 12, 0.15); }
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(180, 130, 70, 0.12), 0 6px 20px rgba(40, 25, 12, 0.1); }
+  50% { box-shadow: inset 0 0 0 2px rgba(180, 130, 70, 0.2), 0 6px 20px rgba(40, 25, 12, 0.15); }
 }
 </style>

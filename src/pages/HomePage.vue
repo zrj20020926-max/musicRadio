@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import MiniPlayer from '../components/MiniPlayer.vue'
@@ -12,11 +13,23 @@ const radioStore = useRadioStore()
 const {
   isPlaying,
   currentProgram,
+  currentStationId,
+  currentStationObj,
   subscribed,
   favorites,
   featuredPrograms,
   todaySchedulePrograms,
 } = storeToRefs(radioStore)
+
+const isProgramPlaying = computed(() => !currentStationId.value && isPlaying.value)
+
+function toggleNowPlaying() {
+  if (currentStationId.value) {
+    radioStore.toggleStation()
+  } else {
+    radioStore.togglePlay()
+  }
+}
 
 function goProgramDetail(programId) {
   router.push(`/programs/${programId}`)
@@ -34,8 +47,9 @@ function goProgramDetail(programId) {
       <div class="mt-8">
         <MiniPlayer
           :program="currentProgram"
+          :station="currentStationObj"
           :is-playing="isPlaying"
-          @toggle="radioStore.togglePlay()"
+          @toggle="toggleNowPlaying"
         />
       </div>
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -43,6 +57,7 @@ function goProgramDetail(programId) {
           v-for="program in featuredPrograms.slice(0, 2)"
           :key="program.id"
           :program="program"
+          :is-active="currentProgram?.id === program.id && isProgramPlaying"
           :is-subscribed="subscribed.has(program.id)"
           :is-favorite="favorites.has(program.id)"
           @play="radioStore.playProgram"
