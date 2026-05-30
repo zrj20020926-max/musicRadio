@@ -47,7 +47,7 @@ function resetDrop(d) {
 export class RainEffect extends BaseEffect {
   constructor(canvas, ctx, options) {
     super(canvas, ctx, options)
-    this._pool = new ObjectPool(createDrop, resetDrop, 300)
+    this._pool = new ObjectPool(createDrop, resetDrop, 520)
     this._drops = []
     this._streaks = []
     this._splats = []
@@ -97,24 +97,24 @@ export class RainEffect extends BaseEffect {
   }
 
   _initDrops() {
-    for (let i = 0; i < 140; i++) {
+    for (let i = 0; i < 230; i++) {
       const d = this._pool.acquire()
       d.x = Math.random() * this.cssWidth
       d.y = Math.random() * this.cssHeight
-      d.radius = 0.8 + Math.random() * 1.8
+      d.radius = 0.7 + Math.random() * 2.1
       d.moving = false
-      d.opacity = 0.5 + Math.random() * 0.4
+      d.opacity = 0.45 + Math.random() * 0.45
       this._drops.push(d)
     }
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 42; i++) {
       const d = this._pool.acquire()
       d.x = Math.random() * this.cssWidth
       d.y = Math.random() * this.cssHeight
-      d.radius = 3.5 + Math.random() * 4
+      d.radius = 3 + Math.random() * 5.5
       d.moving = false
       d.opacity = 0.75 + Math.random() * 0.2
-      d.growRate = 0.002 + Math.random() * 0.003
+      d.growRate = 0.003 + Math.random() * 0.005
       this._drops.push(d)
     }
   }
@@ -123,12 +123,12 @@ export class RainEffect extends BaseEffect {
     const d = this._pool.acquire()
     d.x = Math.random() * this.cssWidth
     d.y = Math.random() * this.cssHeight * 0.85 + this.cssHeight * 0.05
-    d.radius = 2 + Math.random() * 3
+    d.radius = 1.8 + Math.random() * 4.2
     d.moving = false
     d.opacity = 0.9
     d.splatting = true
     d.splatPhase = 0
-    d.growRate = 0.002 + Math.random() * 0.003
+    d.growRate = 0.003 + Math.random() * 0.006
     this._drops.push(d)
 
     this._splats.push({
@@ -149,17 +149,17 @@ export class RainEffect extends BaseEffect {
     const dtScale = dt / 16.67
 
     this._streakAcc += dt
-    if (this._streakAcc > 30) {
+    if (this._streakAcc > 18) {
       this._streakAcc = 0
-      if (this._streaks.length < 25) {
-        const count = 1 + Math.floor(Math.random() * 3)
+      if (this._streaks.length < 58) {
+        const count = 2 + Math.floor(Math.random() * 4)
         for (let i = 0; i < count; i++) {
           this._streaks.push({
             x: Math.random() * this.cssWidth,
             y: -30 - Math.random() * 60,
-            length: 30 + Math.random() * 50,
-            speed: 18 + Math.random() * 14,
-            opacity: 0.08 + Math.random() * 0.12,
+            length: 45 + Math.random() * 70,
+            speed: 24 + Math.random() * 20,
+            opacity: 0.1 + Math.random() * 0.14,
             angle: 0.08 + Math.random() * 0.15,
             width: 0.6 + Math.random() * 0.8,
           })
@@ -177,11 +177,12 @@ export class RainEffect extends BaseEffect {
     }
 
     this._spawnAcc += dt
-    if (this._spawnAcc > 300) {
+    if (this._spawnAcc > 135) {
       this._spawnAcc = 0
       const r = Math.random()
-      if (r < 0.6) this._spawnImpact()
-      if (r < 0.25) this._spawnImpact()
+      if (r < 0.85) this._spawnImpact()
+      if (r < 0.55) this._spawnImpact()
+      if (r < 0.18) this._spawnImpact()
     }
 
     for (let i = this._splats.length - 1; i >= 0; i--) {
@@ -203,9 +204,9 @@ export class RainEffect extends BaseEffect {
 
       if (d.growRate > 0 && !d.moving) {
         d.radius += d.growRate * dtScale
-        if (d.radius > 7 + Math.random() * 3) {
+        if (d.radius > 6.2 + Math.random() * 3.5) {
           d.moving = true
-          d.velocityY = 0.15
+          d.velocityY = 0.18 + d.radius * 0.018
           d.growRate = 0
         }
       }
@@ -217,10 +218,10 @@ export class RainEffect extends BaseEffect {
       d.velocityY += gravity * dtScale
 
       if (!d.stuck) {
-        const stickProb = 0.007 / (d.radius * 0.5)
+        const stickProb = 0.005 / (d.radius * 0.5)
         if (Math.random() < stickProb * dtScale) {
           d.stuck = true
-          d.stuckTimer = 30 + Math.random() * 100
+          d.stuckTimer = 18 + Math.random() * 80
         }
       }
 
@@ -240,11 +241,11 @@ export class RainEffect extends BaseEffect {
         d.y += d.velocityY * dtScale
       }
 
-      d.velocityY = Math.min(d.velocityY, 2.8 + d.radius * 0.25)
+      d.velocityY = Math.min(d.velocityY, 3.5 + d.radius * 0.32)
 
       if (!d.stuck && d.velocityY > 0.08) {
         d.lastTrailDist += d.velocityY * dtScale
-        if (d.lastTrailDist >= 2.5) {
+        if (d.lastTrailDist >= 2.1) {
           const idx = (d.trailIdx % TRAIL_MAX) * 2
           d.trail[idx] = d.x
           d.trail[idx + 1] = d.y
@@ -443,40 +444,65 @@ export class RainEffect extends BaseEffect {
   _drawStaticShape(ctx, r, d) {
     const opacity = d.opacity
     const irr = d.irregularity
+    const sag = Math.min(0.22, r * 0.018)
+    const yScale = 1 + sag
+    const xScale = 1 - sag * 0.35
 
     ctx.beginPath()
-    const segments = 8
+    const segments = 14
     for (let i = 0; i <= segments; i++) {
       const angle = (Math.PI * 2 / segments) * i
-      const rVar = r * (1 + Math.sin(angle * 3 + irr * 10) * irr * 0.3)
-      const px = Math.cos(angle) * rVar
-      const py = Math.sin(angle) * rVar
+      const bottomWeight = Math.max(0, Math.sin(angle))
+      const rVar = r * (
+        1
+        + Math.sin(angle * 3 + irr * 10) * irr * 0.28
+        + Math.cos(angle * 5 + irr * 7) * irr * 0.12
+        + bottomWeight * sag * 0.65
+      )
+      const px = Math.cos(angle) * rVar * xScale
+      const py = Math.sin(angle) * rVar * yScale + bottomWeight * r * sag * 0.5
       if (i === 0) ctx.moveTo(px, py)
       else ctx.lineTo(px, py)
     }
     ctx.closePath()
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.025 * opacity})`
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.018 * opacity})`
     ctx.fill()
 
-    ctx.strokeStyle = `rgba(195, 212, 230, ${0.45 * opacity})`
-    ctx.lineWidth = 0.7 + r * 0.04
+    ctx.strokeStyle = `rgba(210, 228, 245, ${0.55 * opacity})`
+    ctx.lineWidth = 0.65 + r * 0.045
     ctx.stroke()
 
-    const innerGrad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 0.9)
-    innerGrad.addColorStop(0, `rgba(160, 185, 210, ${0.02 * opacity})`)
-    innerGrad.addColorStop(1, `rgba(185, 205, 225, ${0.08 * opacity})`)
+    const innerGrad = ctx.createRadialGradient(-r * 0.15, -r * 0.2, r * 0.15, 0, r * 0.15, r * 1.08)
+    innerGrad.addColorStop(0, `rgba(255, 255, 255, ${0.055 * opacity})`)
+    innerGrad.addColorStop(0.52, `rgba(150, 178, 205, ${0.045 * opacity})`)
+    innerGrad.addColorStop(1, `rgba(40, 60, 80, ${0.09 * opacity})`)
     ctx.fillStyle = innerGrad
     ctx.fill()
 
-    const hlX = -r * 0.3
-    const hlY = -r * 0.3
-    const hlR = r * 0.22
     ctx.beginPath()
-    ctx.arc(hlX, hlY, hlR, 0, Math.PI * 2)
+    ctx.ellipse(0, r * (0.42 + sag), r * 0.56, r * 0.16, 0, 0, Math.PI * 2)
+    const baseGrad = ctx.createRadialGradient(0, r * 0.42, 0, 0, r * 0.42, r * 0.7)
+    baseGrad.addColorStop(0, `rgba(35, 45, 55, ${0.12 * opacity})`)
+    baseGrad.addColorStop(1, 'rgba(35, 45, 55, 0)')
+    ctx.fillStyle = baseGrad
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.arc(r * 0.38, -r * 0.16, r * 0.42, -Math.PI * 0.58, Math.PI * 0.3)
+    ctx.strokeStyle = `rgba(235, 247, 255, ${0.16 * opacity})`
+    ctx.lineWidth = Math.max(0.45, r * 0.08)
+    ctx.lineCap = 'round'
+    ctx.stroke()
+
+    const hlX = -r * 0.3
+    const hlY = -r * 0.34
+    const hlR = r * 0.24
+    ctx.beginPath()
+    ctx.ellipse(hlX, hlY, hlR * 0.85, hlR * 0.55, -0.45, 0, Math.PI * 2)
     const hlGrad = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, hlR)
-    hlGrad.addColorStop(0, `rgba(255, 255, 255, ${0.8 * opacity})`)
-    hlGrad.addColorStop(0.5, `rgba(255, 255, 255, ${0.25 * opacity})`)
+    hlGrad.addColorStop(0, `rgba(255, 255, 255, ${0.9 * opacity})`)
+    hlGrad.addColorStop(0.45, `rgba(255, 255, 255, ${0.32 * opacity})`)
     hlGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
     ctx.fillStyle = hlGrad
     ctx.fill()
@@ -485,6 +511,15 @@ export class RainEffect extends BaseEffect {
     ctx.arc(hlX + hlR * 0.2, hlY + hlR * 0.2, hlR * 0.22, 0, Math.PI * 2)
     ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * opacity})`
     ctx.fill()
+
+    if (r > 4) {
+      ctx.beginPath()
+      ctx.arc(-r * 0.05, -r * 0.08, r * 0.72, Math.PI * 0.95, Math.PI * 1.35)
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.12 * opacity})`
+      ctx.lineWidth = Math.max(0.4, r * 0.045)
+      ctx.lineCap = 'round'
+      ctx.stroke()
+    }
 
     if (d.splatting) {
       const splatAlpha = Math.max(0, 1 - d.splatPhase / 10) * 0.25
@@ -498,34 +533,43 @@ export class RainEffect extends BaseEffect {
 
   _drawFlowingShape(ctx, r, speed, d) {
     const opacity = d.opacity
-    const stretch = 1 + Math.min(speed * 0.15, 0.8)
+    const stretch = 1 + Math.min(speed * 0.22, 1.15)
     const w = r * (1 / Math.sqrt(stretch))
     const h = r * stretch
+    const lean = Math.sin(d.wobblePhase) * w * 0.16
 
     ctx.beginPath()
-    ctx.moveTo(0, -h * 0.65)
-    ctx.bezierCurveTo(w * 0.35, -h * 0.6, w * 0.85, -h * 0.2, w * 0.8, h * 0.1)
-    ctx.bezierCurveTo(w * 0.75, h * 0.45, w * 0.45, h * 0.8, 0, h * 0.85)
-    ctx.bezierCurveTo(-w * 0.45, h * 0.8, -w * 0.75, h * 0.45, -w * 0.8, h * 0.1)
-    ctx.bezierCurveTo(-w * 0.85, -h * 0.2, -w * 0.35, -h * 0.6, 0, -h * 0.65)
+    ctx.moveTo(lean, -h * 0.68)
+    ctx.bezierCurveTo(w * 0.38 + lean, -h * 0.6, w * 0.9 + lean, -h * 0.2, w * 0.82, h * 0.12)
+    ctx.bezierCurveTo(w * 0.75, h * 0.48, w * 0.42, h * 0.82, 0, h * 0.9)
+    ctx.bezierCurveTo(-w * 0.46, h * 0.82, -w * 0.78, h * 0.48, -w * 0.82, h * 0.1)
+    ctx.bezierCurveTo(-w * 0.9 + lean, -h * 0.2, -w * 0.35 + lean, -h * 0.62, lean, -h * 0.68)
     ctx.closePath()
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.02 * opacity})`
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.018 * opacity})`
     ctx.fill()
 
-    ctx.strokeStyle = `rgba(190, 208, 228, ${0.5 * opacity})`
-    ctx.lineWidth = 0.8 + r * 0.03
+    ctx.strokeStyle = `rgba(210, 228, 245, ${0.58 * opacity})`
+    ctx.lineWidth = 0.75 + r * 0.04
     ctx.stroke()
 
     const innerGrad = ctx.createRadialGradient(
       -w * 0.1, -h * 0.05, 0,
       0, h * 0.1, Math.max(w, h) * 0.85
     )
-    innerGrad.addColorStop(0, `rgba(160, 185, 210, ${0.03 * opacity})`)
-    innerGrad.addColorStop(0.6, `rgba(150, 175, 200, ${0.05 * opacity})`)
-    innerGrad.addColorStop(1, `rgba(180, 200, 220, ${0.08 * opacity})`)
+    innerGrad.addColorStop(0, `rgba(255, 255, 255, ${0.05 * opacity})`)
+    innerGrad.addColorStop(0.55, `rgba(145, 172, 198, ${0.055 * opacity})`)
+    innerGrad.addColorStop(1, `rgba(35, 50, 65, ${0.09 * opacity})`)
     ctx.fillStyle = innerGrad
     ctx.fill()
+
+    ctx.beginPath()
+    ctx.moveTo(-w * 0.42, -h * 0.25)
+    ctx.bezierCurveTo(-w * 0.65, h * 0.12, -w * 0.38, h * 0.42, -w * 0.12, h * 0.72)
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * opacity})`
+    ctx.lineWidth = Math.max(0.35, w * 0.08)
+    ctx.lineCap = 'round'
+    ctx.stroke()
 
     const hlX = -w * 0.28
     const hlY = -h * 0.3
@@ -547,10 +591,17 @@ export class RainEffect extends BaseEffect {
     if (speed > 1.2) {
       ctx.beginPath()
       ctx.moveTo(0, h * 0.85)
-      ctx.quadraticCurveTo(w * 0.1, h * 0.85 + h * 0.2, 0, h * 0.85 + h * 0.35)
-      ctx.strokeStyle = `rgba(190, 210, 228, ${0.2 * opacity})`
-      ctx.lineWidth = w * 0.15
+      ctx.quadraticCurveTo(w * 0.12, h * 1.02, -w * 0.05, h * 1.18)
+      ctx.strokeStyle = `rgba(205, 225, 242, ${0.24 * opacity})`
+      ctx.lineWidth = Math.max(0.55, w * 0.18)
       ctx.lineCap = 'round'
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(w * 0.18, h * 0.76)
+      ctx.quadraticCurveTo(w * 0.32, h * 0.96, w * 0.08, h * 1.08)
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 * opacity})`
+      ctx.lineWidth = Math.max(0.35, w * 0.08)
       ctx.stroke()
     }
   }
