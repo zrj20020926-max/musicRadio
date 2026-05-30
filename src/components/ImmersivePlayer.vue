@@ -2,7 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AudioBars from './AudioBars.vue'
 import VinylDisc from './VinylDisc.vue'
+import AtmosphereCanvas from './immersive/AtmosphereCanvas.vue'
+import AtmosphereSelector from './immersive/AtmosphereSelector.vue'
+import { useAtmosphere } from '../composables/useAtmosphere'
 import { fetchImmersiveTextLine, fetchImmersiveTextLines } from '../services/immersiveText'
+
+const { activeEffect } = useAtmosphere()
 
 const props = defineProps({
   program: { type: Object, default: null },
@@ -145,6 +150,7 @@ onUnmounted(() => {
     <div class="immersive-bg" :style="backgroundStyle" />
     <div class="immersive-bg immersive-bg--drift" :style="backgroundStyle" />
     <div class="light-field" />
+    <AtmosphereCanvas :effect="activeEffect" :is-playing="isPlaying" />
     <div class="grain-layer" />
     <div class="vignette-layer" />
 
@@ -153,6 +159,7 @@ onUnmounted(() => {
         <span class="signal-dot" />
         <span>{{ statusText }}</span>
       </div>
+      <AtmosphereSelector v-model="activeEffect" />
       <button type="button" class="close-btn" aria-label="关闭沉浸模式" @click="emit('close')">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -375,30 +382,39 @@ onUnmounted(() => {
 .immersive-main {
   position: relative;
   z-index: 2;
-  min-height: calc(100vh - 154px);
-  display: grid;
-  grid-template-rows: 1fr auto auto;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 0 clamp(20px, 5vw, 72px) 118px;
+  gap: clamp(8px, 1.5vh, 20px);
+  padding: 0 clamp(20px, 5vw, 72px) 90px;
+  overflow: hidden;
 }
 .visual-field {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 34vh;
+  flex: 0 0 auto;
+  height: clamp(120px, 28vh, 260px);
+  width: 100%;
 }
 .vinyl-stage {
   position: relative;
-  transform: translateY(4vh);
   opacity: 0.88;
+  max-height: 100%;
+}
+.vinyl-stage :deep(.vinyl-container) {
+  width: clamp(100px, 18vw, 220px);
+  height: clamp(100px, 18vw, 220px);
 }
 .is-playing .vinyl-stage {
   animation: stage-float 5.6s ease-in-out infinite;
 }
 .frequency-badge {
   position: absolute;
-  right: 2%;
-  bottom: 7%;
+  right: -40px;
+  bottom: 20%;
   padding: 5px 9px;
   border: 1px solid rgba(212, 160, 80, 0.34);
   border-radius: 5px;
@@ -407,14 +423,15 @@ onUnmounted(() => {
   font-size: 11px;
   font-family: 'Courier New', monospace;
   letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 .immersive-bars {
   position: absolute;
   left: 14%;
   right: 14%;
-  bottom: 2vh;
-  height: 72px;
-  opacity: 0.46;
+  bottom: 0;
+  height: 48px;
+  opacity: 0.36;
 }
 .film-frame {
   position: absolute;
@@ -432,8 +449,10 @@ onUnmounted(() => {
 }
 
 .track-panel {
+  flex: 0 0 auto;
   text-align: center;
   text-shadow: 0 4px 22px rgba(0, 0, 0, 0.65);
+  padding: clamp(4px, 1.5vh, 16px) 0;
 }
 .eyebrow {
   margin-bottom: 10px;
@@ -457,11 +476,13 @@ h1 {
 }
 
 .text-stage {
-  min-height: 190px;
+  flex: 0 1 auto;
+  min-height: 0;
   display: grid;
   place-items: center;
-  padding-top: 24px;
+  padding-top: clamp(8px, 1.5vh, 24px);
   text-align: center;
+  width: 100%;
 }
 .text-status {
   display: inline-flex;
@@ -594,11 +615,11 @@ h1 {
     padding-top: max(14px, env(safe-area-inset-top));
   }
   .immersive-main {
-    min-height: calc(100vh - 126px);
-    padding: 0 18px 112px;
+    height: calc(100vh - 60px);
+    padding: 0 18px 80px;
   }
   .visual-field {
-    min-height: 30vh;
+    height: clamp(90px, 22vh, 180px);
   }
   .film-frame {
     display: none;
@@ -606,20 +627,56 @@ h1 {
   .immersive-bars {
     left: 4%;
     right: 4%;
-    height: 58px;
-  }
-  .text-stage {
-    min-height: 162px;
-    padding-top: 16px;
+    height: 40px;
   }
   .text-line--current {
     max-width: 92vw;
+    font-size: clamp(18px, 4vw, 28px);
   }
   .immersive-controls {
     width: calc(100vw - 28px);
     gap: 10px;
   }
   .time-chip {
+    display: none;
+  }
+}
+
+@media (max-height: 700px) {
+  .immersive-main {
+    padding-bottom: 72px;
+    gap: 4px;
+  }
+  .visual-field {
+    height: clamp(80px, 20vh, 150px);
+  }
+  .vinyl-stage :deep(.vinyl-container) {
+    width: clamp(80px, 14vw, 140px);
+    height: clamp(80px, 14vw, 140px);
+  }
+  h1 {
+    font-size: clamp(20px, 4vw, 36px);
+  }
+  .text-line--current {
+    font-size: clamp(16px, 3vw, 24px);
+  }
+  .text-line--ghost {
+    display: none;
+  }
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+  .track-meta {
+    margin-top: 4px;
+  }
+  .track-panel {
+    padding: 2px 0;
+  }
+  .immersive-bars {
+    display: none;
+  }
+  .frequency-badge {
     display: none;
   }
 }
@@ -650,10 +707,10 @@ h1 {
 }
 @keyframes stage-float {
   0%, 100% {
-    transform: translateY(4vh) scale(1);
+    transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(3vh) scale(1.025);
+    transform: translateY(-1vh) scale(1.02);
   }
 }
 @keyframes live-pulse {
