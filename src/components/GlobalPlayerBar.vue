@@ -14,7 +14,7 @@ const props = defineProps({
   feedback: { type: String, default: '' },
 })
 
-const emit = defineEmits(['toggle', 'seek', 'next', 'prev', 'retry'])
+const emit = defineEmits(['toggle', 'seek', 'next', 'prev', 'retry', 'open-immersive'])
 
 function handleSeek(event) {
   emit('seek', Number(event.target.value))
@@ -231,6 +231,30 @@ function handleSeek(event) {
           </div>
         </template>
       </div>
+
+      <button
+        type="button"
+        class="immersive-btn"
+        aria-label="打开沉浸模式"
+        title="沉浸模式"
+        @click="emit('open-immersive')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" class="immersive-icon" aria-hidden="true">
+          <path
+            d="M8 4H5a1 1 0 0 0-1 1v3M16 4h3a1 1 0 0 1 1 1v3M8 20H5a1 1 0 0 1-1-1v-3M16 20h3a1 1 0 0 0 1-1v-3"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M9 12h6M12 9v6"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     </div>
   </section>
 </template>
@@ -516,6 +540,44 @@ function handleSeek(event) {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.immersive-btn {
+  display: grid;
+  place-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(180, 130, 70, 0.35);
+  background: rgba(48, 31, 20, 0.62);
+  color: rgba(250, 244, 232, 0.66);
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.immersive-btn:hover {
+  border-color: rgba(212, 160, 80, 0.72);
+  background: rgba(66, 42, 26, 0.82);
+  color: rgba(250, 244, 232, 0.95);
+  box-shadow: 0 0 14px rgba(212, 160, 80, 0.16);
+}
+.immersive-btn:active {
+  transform: scale(0.92);
+}
+.immersive-icon {
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 768px) {
+  .immersive-btn {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .ctrl-btn {

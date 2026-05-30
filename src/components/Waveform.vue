@@ -1,6 +1,10 @@
 <script setup>
 import { computed } from 'vue'
 
+defineOptions({
+  name: 'AudioWaveform',
+})
+
 const props = defineProps({
   animated: {
     type: Boolean,

@@ -71,13 +71,13 @@ const statusText = computed(() => {
 })
 
 const currentSleepMinutes = computed(() => {
-  tick.value
+  void tick.value
   if (!sleepDeadline.value) return 0
   return Math.ceil((sleepDeadline.value - Date.now()) / 60000)
 })
 
 const localSleepLabel = computed(() => {
-  tick.value
+  void tick.value
   return sleepRemainingLabel.value
 })
 

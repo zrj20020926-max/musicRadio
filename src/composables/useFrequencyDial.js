@@ -1,4 +1,4 @@
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 
 const FM_MIN = 87.0
 const FM_MAX = 108.0
