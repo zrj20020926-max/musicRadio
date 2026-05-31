@@ -25,6 +25,7 @@ const {
   progressLabel,
   nextEpisodeTitle,
   feedbackMessage,
+  volume,
 } = storeToRefs(radioStore)
 
 const navItems = [
@@ -79,8 +80,10 @@ function handleTogglePlayback() {
       :duration-label="durationLabel"
       :next-title="nextEpisodeTitle"
       :feedback="feedbackMessage"
+      :volume="volume"
       @toggle="handleTogglePlayback"
       @seek="radioStore.setProgress"
+      @volume="radioStore.setVolume"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"
       @retry="radioStore.retryStation"
@@ -94,8 +97,10 @@ function handleTogglePlayback() {
       :playback-status="playbackStatus"
       :progress-label="progressLabel"
       :duration-label="durationLabel"
+      :volume="volume"
       @close="isImmersiveOpen = false"
       @toggle="handleTogglePlayback"
+      @volume="radioStore.setVolume"
       @next="radioStore.playNext"
       @prev="radioStore.playPrevious"
     />

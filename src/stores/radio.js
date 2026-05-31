@@ -59,6 +59,7 @@ const FAVORITE_FM_STATIONS_KEY = 'retro-radio-favorite-fm-stations'
 const SUBSCRIBED_STATIONS_KEY = 'retro-radio-subscribed-stations'
 const STATION_CACHE_KEY = 'retro-radio-station-cache'
 const LISTENING_SECONDS_KEY = 'retro-radio-listening-seconds'
+const VOLUME_KEY = 'retro-radio-volume'
 
 const EMPTY_PROGRAM = {
   id: '',
@@ -94,6 +95,12 @@ function loadNumber(key, fallback = 0) {
   if (typeof window === 'undefined') return fallback
   const value = Number(window.localStorage.getItem(key))
   return Number.isFinite(value) ? value : fallback
+}
+
+function clampVolume(value) {
+  const nextValue = Number(value)
+  if (!Number.isFinite(nextValue)) return 0.75
+  return Math.max(0, Math.min(nextValue, 1))
 }
 
 function parseDurationToSec(duration) {
@@ -153,6 +160,7 @@ export const useRadioStore = defineStore('radio', () => {
   const audioDuration = ref(0)
   const sleepDeadline = ref(null)
   const listeningSeconds = ref(loadNumber(LISTENING_SECONDS_KEY))
+  const volume = ref(clampVolume(loadNumber(VOLUME_KEY, 0.75)))
 
   const programMap = computed(() => new Map(programs.value.map((item) => [item.id, item])))
 
@@ -449,6 +457,10 @@ export const useRadioStore = defineStore('radio', () => {
     pushToast(`已设置 ${minutes} 分钟后关闭`)
   }
 
+  function setVolume(nextVolume) {
+    volume.value = clampVolume(nextVolume)
+  }
+
   function toggleFavorite(programId) {
     if (!programMap.value.has(programId)) return
     if (favorites.value.has(programId)) {
@@ -731,6 +743,8 @@ export const useRadioStore = defineStore('radio', () => {
   }
 
   if (typeof window !== 'undefined' && audio) {
+    audio.volume = volume.value
+
     audio.addEventListener('durationchange', () => {
       if (Number.isFinite(audio.duration)) audioDuration.value = audio.duration
     })
@@ -900,6 +914,10 @@ export const useRadioStore = defineStore('radio', () => {
   watch(listeningSeconds, (value) => {
     window.localStorage.setItem(LISTENING_SECONDS_KEY, String(value))
   })
+  watch(volume, (value) => {
+    if (audio) audio.volume = value
+    window.localStorage.setItem(VOLUME_KEY, String(value))
+  })
 
   return {
     programs,
@@ -947,6 +965,7 @@ export const useRadioStore = defineStore('radio', () => {
     listeningMinutes,
     listeningHourPart,
     listeningMinutePart,
+    volume,
     togglePlay,
     playProgram,
     playNext,
@@ -954,6 +973,7 @@ export const useRadioStore = defineStore('radio', () => {
     setProgress,
     addToQueue,
     setSleepTimer,
+    setVolume,
     toggleFavorite,
     toggleSubscribe,
     toggleFavoriteStation,
