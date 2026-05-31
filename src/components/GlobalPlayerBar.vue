@@ -12,12 +12,17 @@ const props = defineProps({
   durationLabel: { type: String, required: true },
   nextTitle: { type: String, default: '暂无下一集' },
   feedback: { type: String, default: '' },
+  volume: { type: Number, default: 0.75 },
 })
 
-const emit = defineEmits(['toggle', 'seek', 'next', 'prev', 'retry', 'open-immersive'])
+const emit = defineEmits(['toggle', 'seek', 'volume', 'next', 'prev', 'retry', 'open-immersive'])
 
 function handleSeek(event) {
   emit('seek', Number(event.target.value))
+}
+
+function handleVolume(event) {
+  emit('volume', Number(event.target.value))
 }
 </script>
 
@@ -230,6 +235,37 @@ function handleSeek(event) {
             <span class="live-text">{{ playbackStatus === 'error' ? 'OFFLINE' : 'LIVE' }}</span>
           </div>
         </template>
+      </div>
+
+      <div class="volume-control" :title="`Volume ${Math.round(props.volume * 100)}%`">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="volume-icon" aria-hidden="true">
+          <path
+            v-if="props.volume <= 0"
+            d="M5 9v6h4l5 4V5L9 9H5zm12.7 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1z"
+          />
+          <path
+            v-else-if="props.volume < 0.5"
+            d="M5 9v6h4l5 4V5L9 9H5zm12.2 3a3.4 3.4 0 0 0-1.7-3v6a3.4 3.4 0 0 0 1.7-3z"
+          />
+          <path
+            v-else
+            d="M5 9v6h4l5 4V5L9 9H5zm10.5-.1v6.2A3.5 3.5 0 0 0 17 12a3.5 3.5 0 0 0-1.5-3.1zm0-3.5v2.1A6 6 0 0 1 19.5 12a6 6 0 0 1-4 5.7v2.1A8 8 0 0 0 21.5 12a8 8 0 0 0-6-6.6z"
+          />
+        </svg>
+        <div class="volume-track">
+          <div class="volume-fill" :style="{ width: `${props.volume * 100}%` }" />
+          <input
+            class="volume-input"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            :value="props.volume"
+            aria-label="Volume"
+            @input="handleVolume"
+          />
+        </div>
+        <span class="volume-value">{{ Math.round(props.volume * 100) }}</span>
       </div>
 
       <button
@@ -661,6 +697,75 @@ function handleSeek(event) {
 @media (max-width: 1024px) {
   .player-right {
     display: none;
+  }
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-width: 146px;
+  padding: 7px 10px;
+  border: 1px solid rgba(180, 130, 70, 0.26);
+  border-radius: 999px;
+  background: rgba(32, 21, 14, 0.56);
+  color: rgba(250, 244, 232, 0.58);
+}
+.volume-icon {
+  width: 17px;
+  height: 17px;
+  color: rgba(212, 160, 80, 0.76);
+}
+.volume-track {
+  position: relative;
+  width: 74px;
+  height: 4px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(60, 40, 25, 0.72);
+}
+.volume-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(to right, rgba(120, 200, 120, 0.62), rgba(212, 160, 80, 0.92));
+}
+.volume-input {
+  position: absolute;
+  inset: -7px 0;
+  width: 100%;
+  height: 18px;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.volume-value {
+  width: 26px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  color: rgba(250, 244, 232, 0.46);
+  text-align: right;
+}
+@media (max-width: 900px) {
+  .volume-control {
+    min-width: 118px;
+  }
+  .volume-track {
+    width: 56px;
+  }
+}
+@media (max-width: 640px) {
+  .volume-control {
+    order: 3;
+    width: calc(100% - 44px);
+    min-width: 0;
+  }
+  .volume-track {
+    flex: 1 1 auto;
+    width: auto;
   }
 }
 

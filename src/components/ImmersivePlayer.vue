@@ -16,9 +16,10 @@ const props = defineProps({
   playbackStatus: { type: String, default: 'idle' },
   progressLabel: { type: String, default: '00:00' },
   durationLabel: { type: String, default: '00:00' },
+  volume: { type: Number, default: 0.75 },
 })
 
-const emit = defineEmits(['close', 'toggle', 'next', 'prev'])
+const emit = defineEmits(['close', 'toggle', 'volume', 'next', 'prev'])
 
 const pageIndex = ref(0)
 const textLines = ref([])
@@ -121,6 +122,10 @@ async function pollTextLine() {
 
 function handleKeydown(event) {
   if (event.key === 'Escape') emit('close')
+}
+
+function handleVolume(event) {
+  emit('volume', Number(event.target.value))
 }
 
 onMounted(() => {
@@ -245,6 +250,35 @@ onUnmounted(() => {
       </button>
       <div v-else class="time-chip">{{ progressLabel }}</div>
       <div v-if="!isLive" class="time-chip">{{ progressLabel }} / {{ durationLabel }}</div>
+      <div class="volume-chip" :title="`Volume ${Math.round(volume * 100)}%`">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            v-if="volume <= 0"
+            d="M5 9v6h4l5 4V5L9 9H5zm12.7 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4-2.1-2.1z"
+          />
+          <path
+            v-else-if="volume < 0.5"
+            d="M5 9v6h4l5 4V5L9 9H5zm12.2 3a3.4 3.4 0 0 0-1.7-3v6a3.4 3.4 0 0 0 1.7-3z"
+          />
+          <path
+            v-else
+            d="M5 9v6h4l5 4V5L9 9H5zm10.5-.1v6.2A3.5 3.5 0 0 0 17 12a3.5 3.5 0 0 0-1.5-3.1zm0-3.5v2.1A6 6 0 0 1 19.5 12a6 6 0 0 1-4 5.7v2.1A8 8 0 0 0 21.5 12a8 8 0 0 0-6-6.6z"
+          />
+        </svg>
+        <div class="volume-slider">
+          <div class="volume-slider-fill" :style="{ width: `${volume * 100}%` }" />
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            :value="volume"
+            aria-label="Volume"
+            @input="handleVolume"
+          />
+        </div>
+        <span>{{ Math.round(volume * 100) }}</span>
+      </div>
     </footer>
   </section>
 </template>
@@ -609,6 +643,53 @@ h1 {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+.volume-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(212, 160, 80, 0.34);
+  border-radius: 999px;
+  background: rgba(22, 14, 10, 0.56);
+  color: rgba(250, 244, 232, 0.68);
+  backdrop-filter: blur(14px);
+}
+.volume-chip svg {
+  width: 18px;
+  height: 18px;
+  color: rgba(232, 190, 116, 0.82);
+}
+.volume-chip span {
+  width: 26px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  text-align: right;
+}
+.volume-slider {
+  position: relative;
+  width: 94px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(84, 56, 32, 0.7);
+}
+.volume-slider-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(to right, rgba(120, 200, 120, 0.65), rgba(232, 190, 116, 0.95));
+}
+.volume-slider input {
+  position: absolute;
+  inset: -8px 0;
+  width: 100%;
+  height: 20px;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 @media (max-width: 720px) {
   .immersive-top {
@@ -639,6 +720,16 @@ h1 {
   }
   .time-chip {
     display: none;
+  }
+  .volume-chip {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 10px;
+  }
+  .volume-slider {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 56px;
   }
 }
 
