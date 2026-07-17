@@ -20,6 +20,14 @@ import { programs as seedPrograms } from '../data/programs'
 let audio = null
 let hls = null
 let hasRealSource = false
+const REVMA_TOKEN_PARAMS = ['rj-ttl', 'rj-tok', '_revmaSession']
+const REVMA_PROXY_PATH = '/__revma_stream__'
+const STATION_BUFFER_GRACE_MS = 8000
+const STATION_STABLE_PLAY_MS = 30000
+const STATION_RECONNECT_DELAYS = [1000, 2500, 5000, 10000, 15000]
+const REVMA_MSE_MIME = 'audio/aac'
+const REVMA_MSE_APPEND_BYTES = 32 * 1024
+const REVMA_MSE_KEEP_BEHIND_SEC = 45
 if (typeof window !== 'undefined') {
   audio = new Audio()
   audio.preload = 'auto'
@@ -36,8 +44,71 @@ function isHlsUrl(url) {
   return url && (url.includes('.m3u8') || url.includes('m3u8'))
 }
 
-function getPlayableUrl(station) {
-  const url = station?.url_resolved || station?.url || ''
+function parseAbsoluteUrl(url) {
+  if (!url) return null
+  try {
+    return new URL(url)
+  } catch {
+    return null
+  }
+}
+
+function isRevmaRcsUrl(url) {
+  const parsed = parseAbsoluteUrl(url)
+  return Boolean(parsed && /(^|\.)rcs\.revma\.com$/i.test(parsed.hostname))
+}
+
+function hasRevmaTokenParams(url) {
+  const parsed = parseAbsoluteUrl(url)
+  if (!parsed) return false
+  return REVMA_TOKEN_PARAMS.some((param) => parsed.searchParams.has(param))
+}
+
+function stripRevmaTokenParams(url) {
+  if (!isRevmaRcsUrl(url)) return url
+  const parsed = parseAbsoluteUrl(url)
+  if (!parsed) return url
+  REVMA_TOKEN_PARAMS.forEach((param) => parsed.searchParams.delete(param))
+  return parsed.toString()
+}
+
+function toRevmaEntryUrl(url) {
+  const parsed = parseAbsoluteUrl(stripRevmaTokenParams(url))
+  if (!parsed || !isRevmaRcsUrl(parsed.toString())) return url
+  parsed.protocol = 'http:'
+  parsed.hostname = 'stream.rcs.revma.com'
+  parsed.port = ''
+  parsed.search = ''
+  parsed.hash = ''
+  return parsed.toString()
+}
+
+function shouldUseLocalRevmaProxy() {
+  if (typeof window === 'undefined') return false
+  const { hostname, port } = window.location
+  return (
+    ['localhost', '127.0.0.1', '::1'].includes(hostname) ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    (port && !['80', '443'].includes(port))
+  )
+}
+
+function toLocalRevmaProxyUrl(url) {
+  return `${REVMA_PROXY_PATH}?url=${encodeURIComponent(url)}`
+}
+
+function isLocalRevmaProxyUrl(url) {
+  return typeof url === 'string' && url.startsWith(REVMA_PROXY_PATH)
+}
+
+function supportsRevmaMse() {
+  if (typeof window === 'undefined') return false
+  return Boolean(window.MediaSource?.isTypeSupported?.(REVMA_MSE_MIME))
+}
+
+function preferPageProtocol(url) {
   if (
     typeof window !== 'undefined' &&
     window.location.protocol === 'https:' &&
@@ -46,6 +117,19 @@ function getPlayableUrl(station) {
     return url.replace(/^http:\/\//i, 'https://')
   }
   return url
+}
+
+function getPlayableUrl(station) {
+  const originalUrl = station?.url || ''
+  const resolvedUrl = station?.url_resolved || ''
+  const shouldUseOriginalUrl =
+    originalUrl && isRevmaRcsUrl(resolvedUrl) && hasRevmaTokenParams(resolvedUrl)
+  const url = shouldUseOriginalUrl ? originalUrl : resolvedUrl || originalUrl
+  if (isRevmaRcsUrl(url)) {
+    const entryUrl = toRevmaEntryUrl(url)
+    return shouldUseLocalRevmaProxy() ? toLocalRevmaProxyUrl(entryUrl) : preferPageProtocol(entryUrl)
+  }
+  return preferPageProtocol(stripRevmaTokenParams(url))
 }
 
 const FAVORITES_KEY = 'retro-radio-favorites'
@@ -125,6 +209,15 @@ export const useRadioStore = defineStore('radio', () => {
   const playbackStatus = ref('idle')
   const playbackError = ref('')
   let loadTimeoutId = null
+  let stationBufferTimeoutId = null
+  let stationReconnectTimeoutId = null
+  let stationStableTimeoutId = null
+  let stationReconnectAttempts = 0
+  let revmaAbortController = null
+  let revmaMediaSource = null
+  let revmaSourceBuffer = null
+  let revmaObjectUrl = ''
+  let revmaMseRequestId = 0
   let currentRequestId = 0
 
   const isPlaying = computed(() => playbackStatus.value === 'playing')
@@ -340,9 +433,13 @@ export const useRadioStore = defineStore('radio', () => {
 
   function loadAudioSource() {
     if (!audio) return
+    currentRequestId += 1
+    clearTimeout(loadTimeoutId)
+    clearStationRecoveryTimers()
     currentStationId.value = null
     currentStationObj.value = null
     destroyHls()
+    cleanupRevmaMseStream()
     audioDuration.value = 0
     const episode = currentEpisode.value
     const url = episode?.audioUrl || ''
@@ -616,11 +713,281 @@ export const useRadioStore = defineStore('radio', () => {
     }
   }
 
-  function playStation(station) {
+  function clearStationBufferTimeout() {
+    if (stationBufferTimeoutId) {
+      clearTimeout(stationBufferTimeoutId)
+      stationBufferTimeoutId = null
+    }
+  }
+
+  function clearStationReconnectTimeout() {
+    if (stationReconnectTimeoutId) {
+      clearTimeout(stationReconnectTimeoutId)
+      stationReconnectTimeoutId = null
+    }
+  }
+
+  function clearStationStableTimeout() {
+    if (stationStableTimeoutId) {
+      clearTimeout(stationStableTimeoutId)
+      stationStableTimeoutId = null
+    }
+  }
+
+  function clearStationRecoveryTimers() {
+    clearStationBufferTimeout()
+    clearStationReconnectTimeout()
+    clearStationStableTimeout()
+  }
+
+  function beginStationStableWatch() {
+    if (!currentStationId.value) return
+    clearStationStableTimeout()
+    stationStableTimeoutId = setTimeout(() => {
+      stationReconnectAttempts = 0
+      stationStableTimeoutId = null
+    }, STATION_STABLE_PLAY_MS)
+  }
+
+  function beginStationBufferWatch() {
+    if (!currentStationId.value) return
+    clearStationBufferTimeout()
+    const requestId = currentRequestId
+    stationBufferTimeoutId = setTimeout(() => {
+      stationBufferTimeoutId = null
+      if (currentRequestId !== requestId || !currentStationId.value) return
+      if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
+        handleStationPlaybackFailure('直播流连接中断')
+      }
+    }, STATION_BUFFER_GRACE_MS)
+  }
+
+  function scheduleStationReconnect(message = '直播流连接中断') {
+    if (!currentStationId.value || !currentStationObj.value) return
+    clearTimeout(loadTimeoutId)
+    loadTimeoutId = null
+    clearStationBufferTimeout()
+    clearStationStableTimeout()
+    if (stationReconnectTimeoutId) return
+
+    if (stationReconnectAttempts >= STATION_RECONNECT_DELAYS.length) {
+      destroyHls()
+      if (audio) audio.pause()
+      playbackStatus.value = 'error'
+      playbackError.value = message
+      return
+    }
+
+    const station = currentStationObj.value
+    const stationId = station.stationuuid || station.name
+    const delay = STATION_RECONNECT_DELAYS[stationReconnectAttempts]
+    stationReconnectAttempts += 1
+    playbackStatus.value = 'buffering'
+    playbackError.value = ''
+    destroyHls()
+    cleanupRevmaMseStream()
+    if (audio) audio.pause()
+
+    stationReconnectTimeoutId = setTimeout(() => {
+      stationReconnectTimeoutId = null
+      if (!currentStationId.value || currentStationId.value !== stationId) return
+      playStation(station, { resetReconnectAttempts: false, silent: true })
+    }, delay)
+  }
+
+  function handleStationPlaybackFailure(message = '直播流连接中断') {
+    if (currentStationId.value && currentStationObj.value) {
+      scheduleStationReconnect(message)
+    }
+  }
+
+  function waitForSourceBufferUpdate(sourceBuffer) {
+    if (!sourceBuffer.updating) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        sourceBuffer.removeEventListener('updateend', onUpdateEnd)
+        sourceBuffer.removeEventListener('error', onError)
+        sourceBuffer.removeEventListener('abort', onAbort)
+      }
+      const onUpdateEnd = () => {
+        cleanup()
+        resolve()
+      }
+      const onError = () => {
+        cleanup()
+        reject(new Error('SourceBuffer update failed'))
+      }
+      const onAbort = () => {
+        cleanup()
+        reject(new DOMException('SourceBuffer update aborted', 'AbortError'))
+      }
+      sourceBuffer.addEventListener('updateend', onUpdateEnd, { once: true })
+      sourceBuffer.addEventListener('error', onError, { once: true })
+      sourceBuffer.addEventListener('abort', onAbort, { once: true })
+    })
+  }
+
+  async function appendRevmaMseBuffer(chunk, requestId) {
+    const sourceBuffer = revmaSourceBuffer
+    const mediaSource = revmaMediaSource
+    if (
+      !chunk?.byteLength ||
+      !sourceBuffer ||
+      !mediaSource ||
+      mediaSource.readyState !== 'open' ||
+      currentRequestId !== requestId ||
+      revmaMseRequestId !== requestId
+    ) {
+      return
+    }
+
+    await waitForSourceBufferUpdate(sourceBuffer)
+    if (currentRequestId !== requestId || revmaMseRequestId !== requestId) return
+    sourceBuffer.appendBuffer(chunk)
+    await waitForSourceBufferUpdate(sourceBuffer)
+    trimRevmaMseBuffer()
+  }
+
+  function trimRevmaMseBuffer() {
+    const sourceBuffer = revmaSourceBuffer
+    if (!audio || !sourceBuffer || sourceBuffer.updating || !sourceBuffer.buffered.length) return
+    const trimEnd = audio.currentTime - REVMA_MSE_KEEP_BEHIND_SEC
+    if (trimEnd <= 0) return
+    const trimStart = sourceBuffer.buffered.start(0)
+    const bufferedEnd = sourceBuffer.buffered.end(0)
+    const safeTrimEnd = Math.min(trimEnd, bufferedEnd - 1)
+    if (safeTrimEnd <= trimStart) return
+    try {
+      sourceBuffer.remove(trimStart, safeTrimEnd)
+    } catch {
+      // Trimming is best-effort; playback can continue with a larger buffer.
+    }
+  }
+
+  function cleanupRevmaMseStream() {
+    revmaMseRequestId = 0
+    if (revmaAbortController) {
+      revmaAbortController.abort()
+      revmaAbortController = null
+    }
+    if (revmaSourceBuffer?.updating) {
+      try {
+        revmaSourceBuffer.abort()
+      } catch {
+        // Ignore cleanup races while replacing the media source.
+      }
+    }
+    revmaSourceBuffer = null
+    if (revmaMediaSource?.readyState === 'open') {
+      try {
+        revmaMediaSource.endOfStream()
+      } catch {
+        // The media source may already be closing.
+      }
+    }
+    revmaMediaSource = null
+    if (revmaObjectUrl) {
+      URL.revokeObjectURL(revmaObjectUrl)
+      revmaObjectUrl = ''
+    }
+  }
+
+  async function pumpRevmaMseStream(streamUrl, requestId) {
+    const controller = revmaAbortController
+    try {
+      const response = await fetch(streamUrl, {
+        cache: 'no-store',
+        signal: controller?.signal,
+      })
+      if (!response.ok || !response.body) {
+        throw new Error(`Revma stream failed: ${response.status}`)
+      }
+
+      const reader = response.body.getReader()
+      let chunks = []
+      let chunkBytes = 0
+
+      while (currentRequestId === requestId && revmaMseRequestId === requestId) {
+        const { value, done } = await reader.read()
+        if (done) throw new Error('Revma stream ended')
+        chunks.push(value)
+        chunkBytes += value.byteLength
+        if (chunkBytes < REVMA_MSE_APPEND_BYTES) continue
+
+        const appendChunk = new Uint8Array(chunkBytes)
+        let offset = 0
+        for (const chunk of chunks) {
+          appendChunk.set(chunk, offset)
+          offset += chunk.byteLength
+        }
+        chunks = []
+        chunkBytes = 0
+        await appendRevmaMseBuffer(appendChunk, requestId)
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return
+      if (currentRequestId === requestId && revmaMseRequestId === requestId) {
+        handleStationPlaybackFailure('Revma 流式播放中断')
+      }
+    }
+  }
+
+  function startRevmaMseStream(streamUrl, requestId, onPlayBlocked = () => {}) {
+    if (!audio || !isLocalRevmaProxyUrl(streamUrl) || !supportsRevmaMse()) return false
+
+    cleanupRevmaMseStream()
+    const mediaSource = new MediaSource()
+    const objectUrl = URL.createObjectURL(mediaSource)
+    const controller = new AbortController()
+    revmaMediaSource = mediaSource
+    revmaObjectUrl = objectUrl
+    revmaAbortController = controller
+    revmaMseRequestId = requestId
+
+    audio.src = objectUrl
+    audio.load()
+    audio.play().catch(onPlayBlocked)
+
+    mediaSource.addEventListener(
+      'sourceopen',
+      () => {
+        if (currentRequestId !== requestId || revmaMseRequestId !== requestId) return
+        try {
+          revmaSourceBuffer = mediaSource.addSourceBuffer(REVMA_MSE_MIME)
+        } catch (error) {
+          console.warn('[audio] Revma MSE source buffer failed', error)
+          handleStationPlaybackFailure('Revma 流式播放不可用')
+          return
+        }
+        try {
+          revmaSourceBuffer.mode = 'sequence'
+        } catch (error) {
+          console.warn('[audio] Revma MSE sequence mode unavailable', error)
+        }
+        pumpRevmaMseStream(streamUrl, requestId)
+      },
+      { once: true },
+    )
+
+    mediaSource.addEventListener('sourceended', () => {
+      if (currentRequestId === requestId && revmaMseRequestId === requestId) {
+        handleStationPlaybackFailure('Revma 流式播放结束')
+      }
+    })
+
+    return true
+  }
+
+  function playStation(station, options = {}) {
     if (!station?.url && !station?.url_resolved) return
     const requestId = ++currentRequestId
     clearTimeout(loadTimeoutId)
+    clearStationRecoveryTimers()
+    if (options.resetReconnectAttempts !== false) {
+      stationReconnectAttempts = 0
+    }
     destroyHls()
+    cleanupRevmaMseStream()
     if (audio) {
       audio.pause()
       audio.src = ''
@@ -632,18 +999,22 @@ export const useRadioStore = defineStore('radio', () => {
       stationCache.value.set(id, station)
       stationCache.value = new Map(stationCache.value)
     }
-    updatePlayHistory({
-      type: 'station',
-      id,
-      title: station.name || id,
-      station,
-    })
+    if (!options.silent) {
+      updatePlayHistory({
+        type: 'station',
+        id,
+        title: station.name || id,
+        station,
+      })
+    }
     playbackStatus.value = 'loading'
     playbackError.value = ''
     hasRealSource = true
     const streamUrl = getPlayableUrl(station)
     if (audio) {
-      if (isHlsUrl(streamUrl) && Hls.isSupported()) {
+      if (startRevmaMseStream(streamUrl, requestId)) {
+        // Revma/RCS is appended continuously through MediaSource.
+      } else if (isHlsUrl(streamUrl) && Hls.isSupported()) {
         hls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 30 })
         hls.loadSource(streamUrl)
         hls.attachMedia(audio)
@@ -654,9 +1025,7 @@ export const useRadioStore = defineStore('radio', () => {
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (currentRequestId !== requestId) return
           if (data.fatal) {
-            playbackStatus.value = 'error'
-            playbackError.value = '流连接失败'
-            destroyHls()
+            handleStationPlaybackFailure('直播流连接中断')
           }
         })
       } else {
@@ -668,24 +1037,23 @@ export const useRadioStore = defineStore('radio', () => {
     loadTimeoutId = setTimeout(() => {
       if (currentRequestId !== requestId) return
       if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
-        playbackStatus.value = 'error'
-        playbackError.value = '连接超时'
-        destroyHls()
-        if (audio) {
-          audio.pause()
-          audio.src = ''
-        }
+        handleStationPlaybackFailure('直播连接超时')
       }
     }, 15000)
+    if (options.silent) return
     pushToast(`正在连接：${station.name}`)
   }
 
   function stopStation() {
+    currentRequestId += 1
     clearTimeout(loadTimeoutId)
+    clearStationRecoveryTimers()
+    stationReconnectAttempts = 0
     currentStationId.value = null
     currentStationObj.value = null
     hasRealSource = false
     destroyHls()
+    cleanupRevmaMseStream()
     if (audio) {
       audio.pause()
       audio.src = ''
@@ -696,47 +1064,36 @@ export const useRadioStore = defineStore('radio', () => {
 
   function retryStation() {
     if (!currentStationId.value) return
-    const stationObj = stations.value.find(
-      (s) => (s.stationuuid || s.name) === currentStationId.value,
-    )
+    const stationObj = getStationById(currentStationId.value)
     if (stationObj) playStation(stationObj)
   }
 
   function toggleStation() {
     if (!currentStationId.value) return
     if (isPlaying.value) {
+      clearStationRecoveryTimers()
       if (audio) audio.pause()
       playbackStatus.value = 'paused'
     } else {
+      clearStationRecoveryTimers()
+      stationReconnectAttempts = 0
       playbackStatus.value = 'loading'
       playbackError.value = ''
       const requestId = ++currentRequestId
       if (audio && audio.src) {
         audio.play().catch(() => {})
       } else {
-        const stationObj = stations.value.find(
-          (s) => (s.stationuuid || s.name) === currentStationId.value,
-        )
+        const stationObj = getStationById(currentStationId.value)
         if (stationObj) {
-          const url = getPlayableUrl(stationObj)
-          if (url) {
-            audio.src = url
-            audio.load()
-            audio.play().catch(() => {})
-            hasRealSource = true
-          }
+          playStation(stationObj)
+          return
         }
       }
       clearTimeout(loadTimeoutId)
       loadTimeoutId = setTimeout(() => {
         if (currentRequestId !== requestId) return
         if (playbackStatus.value === 'loading' || playbackStatus.value === 'buffering') {
-          playbackStatus.value = 'error'
-          playbackError.value = '连接超时'
-          if (audio) {
-            audio.pause()
-            audio.src = ''
-          }
+          handleStationPlaybackFailure('直播连接超时')
         }
       }, 12000)
     }
@@ -754,14 +1111,16 @@ export const useRadioStore = defineStore('radio', () => {
       }
     })
     audio.addEventListener('ended', () => {
-      if (!currentStationId.value) playNext()
+      if (currentStationId.value) {
+        handleStationPlaybackFailure('直播流连接中断')
+        return
+      }
+      playNext()
     })
     audio.addEventListener('error', () => {
       console.warn('[audio] playback error', audio.error)
       if (currentStationId.value) {
-        clearTimeout(loadTimeoutId)
-        playbackStatus.value = 'error'
-        playbackError.value = '播放出错'
+        handleStationPlaybackFailure('直播流连接中断')
       }
     })
     audio.addEventListener('loadstart', () => {
@@ -772,19 +1131,25 @@ export const useRadioStore = defineStore('radio', () => {
     audio.addEventListener('waiting', () => {
       if (currentStationId.value && playbackStatus.value !== 'error') {
         playbackStatus.value = 'buffering'
+        beginStationBufferWatch()
       }
     })
     audio.addEventListener('playing', () => {
       clearTimeout(loadTimeoutId)
+      clearStationBufferTimeout()
+      clearStationReconnectTimeout()
       playbackStatus.value = 'playing'
       playbackError.value = ''
+      beginStationStableWatch()
     })
     audio.addEventListener('canplay', () => {
       clearTimeout(loadTimeoutId)
+      clearStationBufferTimeout()
     })
     audio.addEventListener('stalled', () => {
-      if (currentStationId.value && playbackStatus.value === 'loading') {
+      if (currentStationId.value && playbackStatus.value !== 'error') {
         playbackStatus.value = 'buffering'
+        beginStationBufferWatch()
       }
     })
 
@@ -810,19 +1175,22 @@ export const useRadioStore = defineStore('radio', () => {
           }, 3000)
           const clearAutoplayTimeout = () => clearTimeout(autoplayTimeout)
           audio.addEventListener('playing', clearAutoplayTimeout, { once: true })
-          if (isHlsUrl(url) && Hls.isSupported()) {
+          const requestId = ++currentRequestId
+          if (startRevmaMseStream(url, requestId, onPlayBlocked)) {
+            // Revma/RCS is appended continuously through MediaSource.
+          } else if (isHlsUrl(url) && Hls.isSupported()) {
             hls = new Hls({ maxBufferLength: 10, maxMaxBufferLength: 30 })
             hls.loadSource(url)
             hls.attachMedia(audio)
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (currentRequestId !== requestId) return
               audio.play().catch(onPlayBlocked)
             })
             hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (currentRequestId !== requestId) return
               if (data.fatal) {
                 clearAutoplayTimeout()
-                playbackStatus.value = 'error'
-                playbackError.value = '流连接失败'
-                destroyHls()
+                handleStationPlaybackFailure('直播流连接中断')
               }
             })
           } else {

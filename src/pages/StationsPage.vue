@@ -52,6 +52,25 @@ const statusKey = computed(() => {
   return 'idle'
 })
 
+const statusLabel = computed(() => {
+  switch (statusKey.value) {
+    case 'loadingStations':
+      return 'RECEIVING'
+    case 'tuning':
+      return 'SCANNING'
+    case 'error':
+      return 'SIGNAL LOST'
+    case 'loadingStream':
+      return 'CONNECTING'
+    case 'playing':
+      return 'BROADCASTING'
+    case 'locked':
+      return 'LOCKED'
+    default:
+      return ''
+  }
+})
+
 const onAirState = computed(() => {
   if (isPlaying.value) return 'on'
   if (isBuffering.value || isScanning.value) return 'dim'
@@ -304,15 +323,7 @@ onMounted(async () => {
                 </div>
                 <div class="freq-status-bar">
                   <span class="freq-status-text" :class="'status--' + statusKey">
-                    {{
-                      statusKey === 'locked'
-                        ? 'LOCKED'
-                        : statusKey === 'playing'
-                          ? 'BROADCASTING'
-                          : statusKey === 'tuning'
-                            ? 'SCANNING'
-                            : ''
-                    }}
+                    {{ statusLabel }}
                   </span>
                 </div>
               </div>
@@ -1084,6 +1095,16 @@ onMounted(async () => {
 .status--tuning {
   color: #b87830;
   animation: blink-soft 0.8s infinite;
+}
+.status--loadingStations,
+.status--loadingStream {
+  color: #b87830;
+  animation: blink-soft 0.8s infinite;
+}
+.status--error {
+  color: #c84830;
+  text-shadow: 0 0 8px rgba(200, 72, 48, 0.45);
+  animation: blink-soft 0.65s infinite;
 }
 
 @keyframes blink-soft {
